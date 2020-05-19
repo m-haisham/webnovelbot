@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from temp import ALMIGHTY_COACH
+from temp import THE_LORD_OF_MYSTERIES
 from webnovel import WebnovelBot
 
 
@@ -69,21 +69,14 @@ def show(coins, fastpass):
 if __name__ == '__main__':
     webnovel = WebnovelBot(timeout=20)
 
-    webnovel.driver.get(ALMIGHTY_COACH)
-
-    for title, chapters in webnovel.table_of_contents().items():
-        print(title)
-        for c in chapters:
-            print(c.url)
-            webnovel.driver.get(c.url)
-        print()
+    webnovel.driver.get(THE_LORD_OF_MYSTERIES)
 
     # webnovel.signin(USER_EMAIL, USER_PASS)
-    #
-    # profile = webnovel.profile()
 
-    # coins, fastpass = webnovel.batch_unlock(profile.coins, profile.fastpass, maximum_cost=10, execute=False)
-    #
-    # show(coins, fastpass)
+    profile = webnovel.profile()
+
+    coins, fastpass = webnovel.batch_unlock(profile.coins, profile.fastpass, maximum_cost=10, execute=False)
+
+    show(coins, fastpass)
 
     webnovel.close()
