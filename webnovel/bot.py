@@ -1,8 +1,5 @@
-import functools
 import json
-import math
-from copy import copy
-from typing import List, Tuple
+from typing import List, Union
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -12,54 +9,25 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from .analytic import IAnalyser, Analysis
 from .chapter import Chapter
-from .exceptions import NotSignedInError
+from .decorators import require_signin
+from .exceptions import NotSignedInException
 from .profile import WebnovelProfile
 
 BASE_URL = 'https://www.webnovel.com'
 
 
 class WebnovelBot:
-    class require_signin(object):
+    def __init__(self, driver=None, timeout=10):
         """
-        signed in checker decorator class
+        :param driver: selenium web driver to use
+        :param timeout: timeout for all class operations
         """
-
-        def __init__(self, func):
-            self.__self__ = None
-
-            self.__wrapped__ = func
-            functools.update_wrapper(self, func)
-
-        def __call__(self, *args, **kwargs):
-            # if not bound to an object, raise value error
-            if self.__self__ is None:
-                raise ValueError
-
-            if not self.__self__.is_signedin():
-                raise NotSignedInError()
-
-            return self.__wrapped__(self.__self__, *args, **kwargs)
-
-        def __get__(self, instance, owner):
-            if instance is None:
-                return self
-
-            # create a bound copy
-            bound = copy(self)
-            bound.__self__ = instance
-
-            # update __doc__ and similar attributes
-            functools.update_wrapper(bound, self.__wrapped__)
-
-            # add the bound instance to the object's dict so that
-            # __get__ won't be called a 2nd time
-            setattr(instance, self.__wrapped__.__name__, bound)
-
-            return bound
-
-    def __init__(self, timeout=10):
-        self.driver = webdriver.Chrome()
+        if driver is None:
+            self.driver = webdriver.Chrome()
+        else:
+            self.driver = driver
         self.timeout = timeout
 
     def home(self):
@@ -185,7 +153,7 @@ class WebnovelBot:
         """
 
         # load table of contents
-        table_of_contents = self.driver.find_element_by_css_selector("a[href='#contents']")
+        table_of_contents = self.driver.find_element_by_css_selector('a.j_show_contents')
         table_of_contents.click()
 
         # wait until table of contents loads
@@ -285,7 +253,7 @@ class WebnovelBot:
 
         # sign in check
         if not self.is_signedin():
-            raise NotSignedInError()
+            raise NotSignedInException()
 
         # wait till lock element loads
         WebDriverWait(self.driver, self.timeout).until(
@@ -310,7 +278,7 @@ class WebnovelBot:
         WebDriverWait(self.driver, 3)
 
         button = None
-        attempt = True
+        should_unlock = True
 
         if coins and can_coin:
             coin_button = self.driver.find_element_by_css_selector(
@@ -322,29 +290,24 @@ class WebnovelBot:
             button = fastpass_button
 
         else:
-            attempt = False
+            should_unlock = False
 
-        if attempt:
+        if should_unlock:
             # unlock
             ActionChains(self.driver).move_to_element(button).pause(unlock_delay).click().perform()
 
-    @require_signin
-    def batch_unlock(self, coins, fastpass, maximum_cost=5, url=None, execute=True):
+    def batch_analyze(self, analyser: IAnalyser, url=None, unlock=True) -> Analysis:
         """
         batch unlocks chapters in ascending order
 
-        tries to unlock as efficiently as possible.
-        if coins is lower than :param minimum_cost: coins are ignored
-        and chapters are unlocked using only fastpass
-
         :require: to be signed in
 
-        :param coins: amount of coins to use
-        :param fastpass: amount of fastpass to use
         :param url: url to novel
-        :param maximum_cost: maximum cost of a chapter where coins will be used
+        :param analyser: analyser for chapters to unlock
+        :param unlock: whether to unlock the chapters
         :return: list of unlocked chapters
         """
+
         if url is not None:
             self.driver.get(url)
 
@@ -354,108 +317,25 @@ class WebnovelBot:
         for chapters in toc.values():
             locked_chapters = locked_chapters + [chapter for chapter in chapters if chapter.locked]
 
-        def explore_forward():
+        analysis = analyser.analyse(locked_chapters)
 
-            explored = []
-
-            # skip chapters count of fastpass
-            # each fastpass can unlock a chapter
-            # so length of fastpass can be unlocked
-            # if count is 3, start from index 3, item 4
-            i = fastpass
-
-            # iterate through fastpass count
-            for c in locked_chapters[:i]:
-                chapter = self.chapter(c.url, is_locked=True)
-
-                explored.append(chapter)
-
-            while True:
-                # add new chapter
-                chapter = self.chapter(locked_chapters[i].url, is_locked=True)
-                explored.append(chapter)
-
-                # sort according to cost
-                explored.sort(key=lambda c: c.cost)
-
-                # split such that the ones that cost most are assigned to fastpass
-                trial_coins, trial_fastpass = explored[:-fastpass], explored[-fastpass:]
-
-                # check if valid solution
-                total_trial_coins: int = sum([c.cost for c in trial_coins])
-                maximum_allowed_usage = len(trial_coins) * maximum_cost
-
-                # if not valid option
-                # previous solution must possible
-                # adding the last chapter caused solution to overshoot
-                # hence last solution must have maximum unlockable
-                if maximum_allowed_usage < total_trial_coins or coins < total_trial_coins:
-                    # remove last added to get solution
-                    explored.remove(chapter)
-
-                    # sort according to cost
-                    explored.sort(key=lambda ch: ch.cost)
-
-                    # split such that the ones that cost most are assigned to fastpass
-                    trial_coins, trial_fastpass = explored[:-fastpass], explored[-fastpass:]
-
-                    # return solution
-                    return trial_coins, trial_fastpass
-
-                i += 1
-
-        def continuous_bruteforce(modifier=2) -> Tuple[List, List]:
-            """
-            continues shrinking list until it can be unlocked
-            fastpass assigned to highest costing chapters
-
-            :return: list of chapters to be unlocked separated
-            """
-
-            # calculate estimate, and limit exploration
-            unlockable_estimated_amount = math.floor(coins / maximum_cost) * modifier + fastpass
-            unlockable_chapters = [self.chapter(c.url, is_locked=True)
-                                   for c in locked_chapters[:unlockable_estimated_amount]]
-
-            # hack: test to confirm all are locked
-            assert all([c.locked for c in unlockable_chapters])
-
-            # from all until there is only 1
-            for i in range(len(unlockable_chapters), fastpass - 1, -1):
-
-                # sort respect to cost, ascending
-                trial_chapters = sorted(unlockable_chapters[:i], key=lambda c: c.cost)
-
-                # split such that the ones that cost most are assigned to fastpass
-                trial_coins, trial_fastpass = trial_chapters[:-fastpass], trial_chapters[-fastpass:]
-
-                # check if valid solution
-                total_trial_coins = sum([c.cost for c in trial_coins])
-                maximum_allowed_usage = len(trial_coins) * maximum_cost
-                if maximum_allowed_usage >= total_trial_coins and coins >= total_trial_coins:
-                    return trial_coins, trial_fastpass
-
-            return [], []
-
-        # to_coins, to_fastpass = continuous_bruteforce(modifier=2)
-        to_coins, to_fastpass = explore_forward()
-
-        if execute:
+        if unlock:
             # unlock the chapters
-            for c in to_coins:
+            # need to be signed in or exception will be thrown
+            for c in analysis.via_coins:
                 self.unlock_chapter(c.url, coins=True)
-            for c in to_fastpass:
+            for c in analysis.via_fastpass:
                 self.unlock_chapter(c.url, fastpass=True)
 
-        return to_coins, to_fastpass
+        return analysis
 
-    def energy_vote(self, indexes: List[int], lead='male', redirect=True):
+    def energy_vote(self, votes: Union[int, List[int]], lead='male', redirect=True):
         """
         votes for the selected indexes of the queue of stories to be released
 
         :requires: to be signed in
 
-        :param indexes: indexes of stories in queue to energy_vote
+        :param votes: number of votes to cast or indexes of stories in queue to energy_vote
         :param lead: either 'male' or 'female' options, to specify which list to select
         :param redirect: whether to load the vote page again
         """
@@ -466,7 +346,14 @@ class WebnovelBot:
 
         # sign in check
         if not self.is_signedin():
-            raise NotSignedInError()
+            raise NotSignedInException()
+
+        # set indexes to be unlocked
+        indexes = None
+        if type(votes) == list:
+            indexes = votes
+        elif type(votes) == int:
+            indexes = range(votes)
 
         vote_buttons = [tile.find_element_by_css_selector('._voteBtn')
                         for tile
@@ -492,7 +379,7 @@ class WebnovelBot:
 
         # sign in check
         if not self.is_signedin():
-            raise NotSignedInError()
+            raise NotSignedInException()
 
         # get power stone energy_vote button
         power_button = self.driver.find_element_by_css_selector(".j_power_btn_area > .j_vote_power")
@@ -509,7 +396,7 @@ class WebnovelBot:
 
         # sign in check
         if not self.is_signedin():
-            raise NotSignedInError()
+            raise NotSignedInException()
 
         # hover over profile button to reveal show claim_tasks button
         self._focus_profile()

@@ -1,8 +1,11 @@
 import json
 from pathlib import Path
 
-from temp import THE_LORD_OF_MYSTERIES
+from selenium.webdriver.common.action_chains import ActionChains
+
+from temp import USER_PASS, USER_EMAIL, NOVEL
 from webnovel import WebnovelBot
+from webnovel.analytic import ForwardCrawl
 
 
 def slugify(s):
@@ -37,7 +40,7 @@ def scrape(bot, link):
             json.dump(cinfo, f)
 
 
-def claim_daily(bot):
+def claim_daily(bot, novel=None):
     # webnovel.signin(USER_EMAIL, USER_PASS)
 
     # claim daily fast pass
@@ -45,38 +48,54 @@ def claim_daily(bot):
     bot.claim_tasks()
     bot.energy_vote([1])
 
+    if novel is not None:
+        bot.driver.get(novel)
 
-def show(coins, fastpass):
-    for c in coins:
+
+def show(analysis):
+    for c in analysis.via_coins:
         c.ptype = 'coins'
-    for c in fastpass:
+    for c in analysis.via_fastpass:
         c.ptype = 'fastpass'
 
-    a = sorted(coins + fastpass, key=lambda c: c.no)
+    a = sorted(analysis.via_coins + analysis.via_fastpass, key=lambda c: c.no)
 
     print('Chapters')
     print('--------')
     for c in a:
-        print(f'no: {c.no}, title: {c.title}, cost: {c.cost}, type: {c.ptype}')
+        print(f'no: {c.no}, title: {c.title.split(":")[0]}, cost: {c.cost}, type: {c.ptype}')
 
     print()
     print('    total cost')
     print('------------------')
-    print(f'   coins: {sum([c.cost for c in coins])}')
-    print(f'fastpass: {len(fastpass)}')
+    print(f'   coins: {analysis.coins_cost}')
+    print(f'fastpass: {analysis.fastpass_cost}')
+
+
+def focus(chapter):
+    # get element
+    selector = f"li[data-cid='{chapter.id}']"
+    element = webnovel.driver.find_element_by_css_selector(selector)
+
+    # move cursor
+    ActionChains(webnovel.driver).move_to_element(element).perform()
 
 
 if __name__ == '__main__':
     webnovel = WebnovelBot(timeout=20)
 
-    webnovel.driver.get(THE_LORD_OF_MYSTERIES)
+    webnovel.driver.get(NOVEL)
 
-    # webnovel.signin(USER_EMAIL, USER_PASS)
+    webnovel.signin(USER_EMAIL, USER_PASS)
+
+    # claim_daily(webnovel, NOVEL)
 
     profile = webnovel.profile()
 
-    coins, fastpass = webnovel.batch_unlock(profile.coins, profile.fastpass, maximum_cost=10, execute=False)
+    analyser = ForwardCrawl(profile, maximum_cost=10, on_load=lambda c: focus(c))
 
-    show(coins, fastpass)
+    analysis = webnovel.batch_analyze(analyser, unlock=False)
+
+    show(analysis)
 
     webnovel.close()
