@@ -6,6 +6,7 @@ class Novel:
     title: str = None
     synopsis: str = None
     genre: str = None
+    url: str = None
 
     author: str = None
     translator: str = None

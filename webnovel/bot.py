@@ -124,6 +124,36 @@ class WebnovelBot:
 
         return True
 
+    @require_signin
+    def library(self, redirect: bool = True) -> List[Novel]:
+        """
+        :requires: to be signed in
+
+        :return: all the novels in library
+        """
+        if redirect:
+            self.driver.get(f'{BASE_URL}/library')
+
+        # all novel containers
+        novel_elements = self.driver.find_elements_by_css_selector('.lib-books > li')
+
+        novels = []
+        for element in novel_elements:
+            link = element.find_element_by_css_selector('a')
+
+            novel = Novel(
+                title=link.text,
+                url=link.get_attribute('href')
+            )
+
+            # this attribute does not exist in Novel class
+            # ... it might be useful
+            novel.update = '_update' in element.get_attribute('class')
+
+            novels.append(novel)
+
+        return novels
+
     @redirect
     def novel(self, url=None) -> Novel:
         """
@@ -143,6 +173,7 @@ class WebnovelBot:
         novel.synopsis = self.driver.find_element_by_css_selector("div[class*='j_synopsis'] > p").text
         novel.genre = subinfo_elems[0].text,
         novel.views = subinfo_elems[3].text[:-6],
+        novel.url = self.driver.current_url
 
         # ratings are posted up to 5, they are converted to float and normalized to 1
         novel.rating = float(info_elems[3].find_element_by_css_selector('strong').text) / 5.0,
