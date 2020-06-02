@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from ..chapter import Chapter
+from ..models import Chapter
 
 
 @dataclass

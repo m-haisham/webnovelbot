@@ -2,12 +2,16 @@ from typing import List, Callable
 
 from .analysis import Analysis
 from .interface import IAnalyser
-from ..chapter import Chapter
-from ..profile import WebnovelProfile
+from ..models import Profile, Chapter
 
 
 class ForwardCrawl(IAnalyser):
-    def __init__(self, profile: WebnovelProfile, maximum_cost, on_load: Callable[[Chapter], None] = None):
+    def __init__(self, profile: Profile, maximum_cost, on_load: Callable[[Chapter], None] = None):
+        """
+        :param profile: webnovel profile for coins and fastpass
+        :param maximum_cost: maximum coins to spend a single chapter
+        :param on_load: call when chapter is loaded
+        """
         self.profile = profile
         self.maximum_cost = maximum_cost
 

@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 from selenium.webdriver.common.action_chains import ActionChains
 
 from temp import USER_PASS, USER_EMAIL, NOVEL
@@ -13,31 +10,6 @@ def slugify(s):
     Normalizes the string, converts to lowercase
     """
     return "".join(x if x.isalnum() else "_" for x in s).lower()
-
-
-def scrape(bot, link):
-    # OPTIONAL: if you want more chapters opened
-    # webnovel.signin(USER_EMAIL, USER_PASS)
-
-    ninfo = bot.novel(link)
-
-    # create dir
-    root = Path(ninfo['title'])
-    root.mkdir(exist_ok=True, parents=True)
-
-    # save info
-    info_file = root / Path('_info.json')
-    with info_file.open('w') as f:
-        json.dump(ninfo, f)
-
-    chapters = bot.table_of_contents()
-    for chapter in chapters[list(chapters.keys())[0]][:10]:  # don't want all chapters scraped
-        cinfo = bot.chapter(chapter)
-
-        # write chapter
-        chapter_file = root / Path(f'{slugify(cinfo["title"])}.json')
-        with chapter_file.open('w') as f:
-            json.dump(cinfo, f)
 
 
 def claim_daily(bot, novel=None):
@@ -91,10 +63,13 @@ if __name__ == '__main__':
     # claim_daily(webnovel, NOVEL)
 
     profile = webnovel.profile()
+    # profile = WebnovelProfile(coins=55, fastpass=6)
 
     analyser = ForwardCrawl(profile, maximum_cost=10, on_load=lambda c: focus(c))
 
-    analysis = webnovel.batch_analyze(analyser, unlock=False)
+    analysis = webnovel.batch_analyze(analyser)
+
+    webnovel.batch_unlock(analysis)
 
     show(analysis)
 

@@ -14,9 +14,9 @@ class Chapter:
     locked: bool = None
     cost: int = None
 
-    def __init__(self, no=None, id=None, url=None, title=None, paragraphs=None, locked=None, cost=None):
+    def __init__(self, no=None, _id=None, url=None, title=None, paragraphs=None, locked=None, cost=None):
         self.no = no
-        self.id = id
+        self.id = _id
         self.url = url
         self.title = title
         self.paragraphs = paragraphs

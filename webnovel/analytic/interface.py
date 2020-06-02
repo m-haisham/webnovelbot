@@ -1,7 +1,7 @@
 from typing import List
 
 from .analysis import Analysis
-from ..chapter import Chapter
+from ..models import Chapter
 
 
 class IAnalyser:

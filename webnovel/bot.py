@@ -10,10 +10,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .analytic import IAnalyser, Analysis
-from .chapter import Chapter
-from .decorators import require_signin
+from .decorators import require_signin, redirect
 from .exceptions import NotSignedInException
-from .profile import WebnovelProfile
+from .models import Profile, Novel, Chapter
 
 BASE_URL = 'https://www.webnovel.com'
 
@@ -54,7 +53,7 @@ class WebnovelBot:
         }
 
         # redundancy check
-        if list(field_mapper.keys()) != WebnovelProfile.fields:
+        if list(field_mapper.keys()) != Profile.fields:
             raise ValueError('fields do not match')
 
         # generate dictionary using field_mapper as title value
@@ -63,7 +62,7 @@ class WebnovelBot:
             for field, value in field_mapper.items()
         }
 
-        return WebnovelProfile(**profile_data)
+        return Profile(**profile_data)
 
     def signin(self, email, password):
         """
@@ -100,7 +99,21 @@ class WebnovelBot:
             EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='My Profile']"))
         )
 
-    def is_signedin(self):
+    @require_signin
+    def signout(self):
+        # display the hover profile
+        self._focus_profile()
+
+        # click and out
+        signout_button = self.driver.find_element_by_css_selector("a[class*='j_logout']")
+        signout_button.click()
+
+        # wait till logged out
+        WebDriverWait(self.driver, self.timeout).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.login-btn'))
+        )
+
+    def is_signedin(self) -> bool:
         """
         :return: whether we are currently signed in
         """
@@ -111,39 +124,41 @@ class WebnovelBot:
 
         return True
 
-    def novel(self, url):
+    @redirect
+    def novel(self, url=None) -> Novel:
         """
         :param url: url to novel
         :return: info about novel { title, genre, views, rating, review_count, author, translator[Conditional],
                                     editor[Conditional] }
         """
-        self.driver.get(url)
-
         info_elems = self.driver.find_elements_by_css_selector('._mn > *')
         subinfo_elems = info_elems[1].find_elements_by_css_selector(':scope > *')
         writerinfo_elems = info_elems[2].find_elements_by_css_selector('p > *')
 
-        info = {
-            'title': info_elems[0].text[:-len(info_elems[0].find_element_by_tag_name('small').text) - 1],
-            'genre': subinfo_elems[0].text,
-            'views': subinfo_elems[3].text[:-6],
+        novel = Novel()
 
-            # ratings are posted up to 5, they are converted to float and normalized to 1
-            'rating': float(info_elems[3].find_element_by_css_selector('strong').text) / 5.0,
+        novel.title = info_elems[0].text[:-len(info_elems[0].find_element_by_tag_name('small').text) - 1],
+        novel.title = novel.title[0]
 
-            # stripped of all non numerals and converted to int
-            'review_count': int(
-                info_elems[3].find_element_by_css_selector('small').text.strip('()')[:-8].replace(',', ''))
-        }
+        novel.synopsis = self.driver.find_element_by_css_selector("div[class*='j_synopsis'] > p").text
+        novel.genre = subinfo_elems[0].text,
+        novel.views = subinfo_elems[3].text[:-6],
+
+        # ratings are posted up to 5, they are converted to float and normalized to 1
+        novel.rating = float(info_elems[3].find_element_by_css_selector('strong').text) / 5.0,
+
+        # stripped of all non numerals and converted to int
+        novel.review_count = int(
+            info_elems[3].find_element_by_css_selector('small').text.strip('()')[:-8].replace(',', ''))
 
         # writer info
         for i in range(round(len(writerinfo_elems) / 2)):
             label = writerinfo_elems[i * 2].text.strip(':').lower()
             value = writerinfo_elems[i * 2 + 1].text
 
-            info[label] = value
+            setattr(novel, label, value)
 
-        return info
+        return novel
 
     def table_of_contents(self):
         """
@@ -180,15 +195,13 @@ class WebnovelBot:
 
         return chapters
 
-    def chapter(self, url, is_locked=False) -> Chapter:
+    @redirect
+    def chapter(self, url=None, is_locked=False) -> Chapter:
         """
         :param url: url to chapter
         :param is_locked: whether the chapter is locked
         :return: Chapter object
         """
-
-        self.driver.get(url)
-
         # wait till chapter loads
         WebDriverWait(self.driver, self.timeout).until(
             EC.presence_of_element_located((By.CLASS_NAME, 'cha-tit'))
@@ -225,10 +238,8 @@ class WebnovelBot:
 
         return chapter
 
+    @redirect
     def is_chapter_locked(self, url=None):
-        if url is not None:
-            self.driver.get(url)
-
         return bool(self.driver.find_elements_by_css_selector('.j_locked_chap'))
 
     def unlock_chapter(self, url=None, coins=False, fastpass=False, unlock_delay=2):
@@ -296,39 +307,42 @@ class WebnovelBot:
             # unlock
             ActionChains(self.driver).move_to_element(button).pause(unlock_delay).click().perform()
 
-    def batch_analyze(self, analyser: IAnalyser, url=None, unlock=True) -> Analysis:
+    def batch_unlock(self, analysis):
+        """
+        unlocks all the chapters in analysis according to assortment
+
+        :require: to be signed in
+
+        :param analysis:
+        :return:
+        """
+        # signed in check not in method as mainly consisting of unlock_chapter
+        # which has signin check
+        for c in analysis.via_coins:
+            self.unlock_chapter(c.url, coins=True)
+        for c in analysis.via_fastpass:
+            self.unlock_chapter(c.url, fastpass=True)
+
+    @redirect
+    def batch_analyze(self, analyser: IAnalyser, url=None) -> Analysis:
         """
         batch unlocks chapters in ascending order
 
         :require: to be signed in
 
-        :param url: url to novel
         :param analyser: analyser for chapters to unlock
-        :param unlock: whether to unlock the chapters
+        :param url: url to novel
         :return: list of unlocked chapters
         """
-
-        if url is not None:
-            self.driver.get(url)
-
         # get all locked chapters
         locked_chapters = []
         toc = self.table_of_contents()
         for chapters in toc.values():
             locked_chapters = locked_chapters + [chapter for chapter in chapters if chapter.locked]
 
-        analysis = analyser.analyse(locked_chapters)
+        return analyser.analyse(locked_chapters)
 
-        if unlock:
-            # unlock the chapters
-            # need to be signed in or exception will be thrown
-            for c in analysis.via_coins:
-                self.unlock_chapter(c.url, coins=True)
-            for c in analysis.via_fastpass:
-                self.unlock_chapter(c.url, fastpass=True)
-
-        return analysis
-
+    @require_signin
     def energy_vote(self, votes: Union[int, List[int]], lead='male', redirect=True):
         """
         votes for the selected indexes of the queue of stories to be released
@@ -344,10 +358,6 @@ class WebnovelBot:
         if redirect:
             self.driver.get(f'{BASE_URL}/vote')
 
-        # sign in check
-        if not self.is_signedin():
-            raise NotSignedInException()
-
         # set indexes to be unlocked
         indexes = None
         if type(votes) == list:
@@ -362,9 +372,11 @@ class WebnovelBot:
         for i in indexes:
             vote_buttons[i].click()
 
+    @redirect
+    @require_signin
     def power_vote(self, url: str = None, repeat: int = 1):
         """
-        energy_vote with power stone to :param url:
+        energy_vote with power stone to [url]
 
         :requires: to be signed in
 
@@ -374,30 +386,19 @@ class WebnovelBot:
         :default repeat: 1
         """
 
-        if url is not None:
-            self.driver.get(url)
-
-        # sign in check
-        if not self.is_signedin():
-            raise NotSignedInException()
-
         # get power stone energy_vote button
         power_button = self.driver.find_element_by_css_selector(".j_power_btn_area > .j_vote_power")
 
         for _ in range(repeat):
             power_button.click()
 
+    @require_signin
     def claim_tasks(self):
         """
         collects all completed task rewards
 
         :requires: to be signed in
         """
-
-        # sign in check
-        if not self.is_signedin():
-            raise NotSignedInException()
-
         # hover over profile button to reveal show claim_tasks button
         self._focus_profile()
 

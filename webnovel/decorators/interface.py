@@ -15,7 +15,9 @@ class BaseDecorator:
         functools.update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
-        raise NotImplementedError('call method not overridden')
+        # if not bound to an object, raise value error
+        if self.__self__ is None:
+            raise ValueError
 
     def __get__(self, instance, owner):
         if instance is None:

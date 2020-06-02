@@ -8,9 +8,7 @@ class require_signin(BaseDecorator):
     """
 
     def __call__(self, *args, **kwargs):
-        # if not bound to an object, raise value error
-        if self.__self__ is None:
-            raise ValueError
+        super.__call__()
 
         if not self.__self__.is_signedin():
             raise NotSignedInException()
