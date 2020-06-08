@@ -8,6 +8,12 @@ from ..models import Profile, Chapter, Novel
 
 class ForwardCrawl(IAnalyser):
     """
+    Calculate while abiding by the rules:
+     - all chapters must be unlocked continuously
+     - cheaper chapters with coins
+     - expensive chapters with fastpass
+     - chapters unlocked using coins must not exceed [maximum_cost] individually
+
     if [maximum_cost] is less than 0 it is considered as being infinite
     """
 

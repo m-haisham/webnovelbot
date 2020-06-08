@@ -1,9 +1,9 @@
 from selenium.webdriver.common.action_chains import ActionChains
 
-from temp import NOVEL
+from temp import NOVEL, USER_EMAIL, USER_PASS
 from webnovel import WebnovelBot
 from webnovel.analytic import ForwardCrawl
-from webnovel.models import Profile, Novel
+from webnovel.models import Novel
 
 
 def slugify(s):
@@ -34,10 +34,16 @@ def show(analysis):
 
     a = sorted(analysis.via_coins + analysis.via_fastpass, key=lambda c: c.no)
 
+    def format_title(s, l=20):
+        if len(s) > l:
+            return s[:l - 1] + '-'
+
+        return s + (' ' * (l - len(s)))
+
     print('Chapters')
     print('--------')
     for c in a:
-        print(f'no: {c.no}, title: {c.title.split(":")[0]}, cost: {c.cost}, type: {c.ptype}')
+        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: {c.ptype}')
 
     print()
     print('    total cost')
@@ -60,12 +66,12 @@ if __name__ == '__main__':
 
     webnovel.driver.get(NOVEL)
 
-    # webnovel.signin(USER_EMAIL, USER_PASS)
+    webnovel.signin(USER_EMAIL, USER_PASS)
 
     # claim_daily(webnovel, NOVEL)
 
-    # profile = webnovel.profile()
-    profile = Profile(coins=55, fastpass=6)
+    profile = webnovel.profile()
+    # profile = Profile(coins=55, fastpass=6)
 
     analyser = ForwardCrawl(Novel(id=webnovel.novel_id), profile, maximum_cost=10, on_load=lambda c: focus(c))
 
@@ -73,6 +79,6 @@ if __name__ == '__main__':
 
     show(analysis)
 
-    # webnovel.batch_unlock(analysis)
+    webnovel.batch_unlock(analysis)
 
     webnovel.close()
