@@ -1,8 +1,9 @@
 from selenium.webdriver.common.action_chains import ActionChains
 
-from temp import USER_PASS, USER_EMAIL, NOVEL
+from temp import NOVEL
 from webnovel import WebnovelBot
 from webnovel.analytic import ForwardCrawl
+from webnovel.models import Profile, Novel
 
 
 def slugify(s):
@@ -13,12 +14,13 @@ def slugify(s):
 
 
 def claim_daily(bot, novel=None):
-    # webnovel.signin(USER_EMAIL, USER_PASS)
-
     # claim daily fast pass
     bot.power_vote()
     bot.claim_tasks()
     bot.energy_vote([1])
+
+    import time
+    time.sleep(5)
 
     if novel is not None:
         bot.driver.get(novel)
@@ -58,19 +60,19 @@ if __name__ == '__main__':
 
     webnovel.driver.get(NOVEL)
 
-    webnovel.signin(USER_EMAIL, USER_PASS)
+    # webnovel.signin(USER_EMAIL, USER_PASS)
 
     # claim_daily(webnovel, NOVEL)
 
-    profile = webnovel.profile()
-    # profile = WebnovelProfile(coins=55, fastpass=6)
+    # profile = webnovel.profile()
+    profile = Profile(coins=55, fastpass=6)
 
-    analyser = ForwardCrawl(profile, maximum_cost=10, on_load=lambda c: focus(c))
+    analyser = ForwardCrawl(Novel(id=webnovel.novel_id), profile, maximum_cost=10, on_load=lambda c: focus(c))
 
     analysis = webnovel.batch_analyze(analyser)
 
-    webnovel.batch_unlock(analysis)
-
     show(analysis)
+
+    # webnovel.batch_unlock(analysis)
 
     webnovel.close()

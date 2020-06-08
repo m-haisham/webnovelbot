@@ -2,7 +2,7 @@ import functools
 from copy import copy
 
 
-class BaseDecorator:
+class MethodDecorator:
     """
     __wrapped__: provides wrapped function
     __self__: provides wrapped functions class
@@ -15,7 +15,6 @@ class BaseDecorator:
         functools.update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
-        # if not bound to an object, raise value error
         if self.__self__ is None:
             raise ValueError
 

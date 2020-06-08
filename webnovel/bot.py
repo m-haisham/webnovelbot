@@ -10,8 +10,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .analytic import IAnalyser, Analysis
+from .api import ParsedApi
 from .decorators import require_signin, redirect
-from .exceptions import NotSignedInException
+from .exceptions import NotSignedInException, NotANovelUrlException
 from .models import Profile, Novel, Chapter
 
 BASE_URL = 'https://www.webnovel.com'
@@ -28,6 +29,18 @@ class WebnovelBot:
         else:
             self.driver = driver
         self.timeout = timeout
+        self.api = ParsedApi()
+
+    @property
+    def novel_id(self):
+        """
+        get novel id from current url
+        """
+        url = self.driver.current_url
+        if 'book' not in url:
+            raise NotANovelUrlException
+
+        return url.split('/')[4]
 
     def home(self):
         """
@@ -167,6 +180,7 @@ class WebnovelBot:
 
         novel = Novel()
 
+        novel.id = self.driver.current_url.split('/')[4]
         novel.title = info_elems[0].text[:-len(info_elems[0].find_element_by_tag_name('small').text) - 1],
         novel.title = novel.title[0]
 
@@ -195,7 +209,7 @@ class WebnovelBot:
         """
         Must be used while a particular novel is loaded to driver
 
-        :return: Chapter object with attributes [no, url, locked]
+        :return: list of volumes in order
         """
 
         # load table of contents
@@ -210,21 +224,25 @@ class WebnovelBot:
         # using bs4 to parse
         # bs4 is faster than selenium selectors
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-        volumes = soup.find_all('div', {'class': 'volume-item'})
-        chapters = {}
-        for volume in volumes:
-            volume_title = volume.find('h4').text.strip()
-            volume_chapters = volume.find_all('li', {'class': 'g_col_6'})
+        volume_elements = soup.find_all('div', {'class': 'volume-item'})
+        volumes = []
+        for volume_element in volume_elements:
+            volume_chapters = volume_element.find_all('li', {'class': 'g_col_6'})
 
-            chapters[volume_title] = [
-                Chapter(
+            chapters = []
+            for chapter in volume_chapters:
+                chapter = Chapter(
                     no=int(chapter.select_one('a > i').text.strip()),
                     url=f"http:{chapter.find('a')['href'].strip()}",
                     locked=bool(chapter.select('a > svg'))
-                ) for chapter in volume_chapters
-            ]
+                )
+                chapter.id = chapter.id_from_url()
 
-        return chapters
+                chapters.append(chapter)
+
+            volumes.append(chapters)
+
+        return volumes
 
     @redirect
     def chapter(self, url=None, is_locked=False) -> Chapter:
@@ -276,7 +294,9 @@ class WebnovelBot:
     def unlock_chapter(self, url=None, coins=False, fastpass=False, unlock_delay=2):
         """
         unlocks the chapter using either coins or fastpass
-        if both options are available, coins are given priority
+
+        either one of [coins] and [fastpass] must be true
+        if both options are available, [coins] are given priority
 
         :required: to be signed in
 
@@ -288,8 +308,10 @@ class WebnovelBot:
         """
         # error testing parameters
         if not coins and not fastpass:
-            raise AssertionError('Choose atleast one from "coins" or "fastpass"')
+            raise ValueError('Choose atleast one from "coins" or "fastpass"')
 
+        # manual [url] and [signin] check
+        # as [coins] and [fastpass] check needs priority
         if url is not None:
             self.driver.get(url)
 
@@ -347,8 +369,8 @@ class WebnovelBot:
         :param analysis:
         :return:
         """
-        # signed in check not in method as mainly consisting of unlock_chapter
-        # which has signin check
+        # signed in check not in method
+        # as mainly consisting of [unlock_chapter] which has signin check
         for c in analysis.via_coins:
             self.unlock_chapter(c.url, coins=True)
         for c in analysis.via_fastpass:
@@ -367,8 +389,7 @@ class WebnovelBot:
         """
         # get all locked chapters
         locked_chapters = []
-        toc = self.table_of_contents()
-        for chapters in toc.values():
+        for chapters in self.table_of_contents():
             locked_chapters = locked_chapters + [chapter for chapter in chapters if chapter.locked]
 
         return analyser.analyse(locked_chapters)
@@ -403,26 +424,6 @@ class WebnovelBot:
         for i in indexes:
             vote_buttons[i].click()
 
-    @redirect
-    @require_signin
-    def power_vote(self, url: str = None, repeat: int = 1):
-        """
-        energy_vote with power stone to [url]
-
-        :requires: to be signed in
-
-        :param url: url of novel to power up, if this is not specified tries to energy_vote in current page
-
-        :param repeat: number of times to press button.
-        :default repeat: 1
-        """
-
-        # get power stone energy_vote button
-        power_button = self.driver.find_element_by_css_selector(".j_power_btn_area > .j_vote_power")
-
-        for _ in range(repeat):
-            power_button.click()
-
     @require_signin
     def claim_tasks(self):
         """
@@ -454,6 +455,27 @@ class WebnovelBot:
         WebDriverWait(self.driver, self.timeout).until_not(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='taskMod'][class*='_on']"))
         )
+
+    @require_signin
+    def power_vote(self, url: str = None, repeat: int = 1):
+        """
+        energy_vote with power stone to [url]
+
+        :requires: to be signed in
+
+        :param url: url of novel to power up, if this is not specified tries to energy_vote in current page
+
+        :param repeat: number of times to press button.
+        :default repeat: 1
+        """
+        if url is not None:
+            self.driver.get(url)
+
+        # get power stone energy_vote button
+        power_button = self.driver.find_element_by_css_selector(".j_power_btn_area > .j_vote_power")
+
+        for _ in range(repeat):
+            power_button.click()
 
     def close(self):
         self.driver.close()

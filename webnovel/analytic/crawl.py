@@ -2,16 +2,23 @@ from typing import List, Callable
 
 from .analysis import Analysis
 from .interface import IAnalyser
-from ..models import Profile, Chapter
+from ..api import ParsedApi
+from ..models import Profile, Chapter, Novel
 
 
 class ForwardCrawl(IAnalyser):
-    def __init__(self, profile: Profile, maximum_cost, on_load: Callable[[Chapter], None] = None):
+    """
+    if [maximum_cost] is less than 0 it is considered as being infinite
+    """
+
+    def __init__(self, novel: Novel, profile: Profile, maximum_cost=-1, on_load: Callable[[Chapter], None] = None):
         """
-        :param profile: webnovel profile for coins and fastpass
-        :param maximum_cost: maximum coins to spend a single chapter
+        :param novel: attribute id must not be null
+        :param profile: webnovel profile, require [coins] and [fastpass]
+        :param maximum_cost: maximum coins to spend a single chapter, maximum
         :param on_load: call when chapter is loaded
         """
+        self.novel = novel
         self.profile = profile
         self.maximum_cost = maximum_cost
 
@@ -19,6 +26,8 @@ class ForwardCrawl(IAnalyser):
             self.on_load = lambda c: None
         else:
             self.on_load = on_load
+
+        self._api = ParsedApi()
 
     def analyse(self, chapters: List[Chapter]) -> Analysis:
 
@@ -35,14 +44,14 @@ class ForwardCrawl(IAnalyser):
 
         # iterate through fastpass count
         for c in chapters[:i]:
-            chapter = Chapter(url=c.url).load()
+            chapter = self._api.chapter(self.novel.id, c.id)
             self.on_load(chapter)
 
             explored.append(chapter)
 
         while True:
             # add new chapter
-            chapter = Chapter(url=chapters[i].url).load()
+            chapter = self._api.chapter(self.novel.id, chapters[i].id)
             self.on_load(chapter)
 
             explored.append(chapter)
@@ -55,13 +64,16 @@ class ForwardCrawl(IAnalyser):
 
             # check if valid solution
             total_trial_coins: int = sum([c.cost for c in trial_coins])
-            maximum_allowed_usage = len(trial_coins) * self.maximum_cost
+
+            # if maximum cost is positive check chapters
+            # else maximum cost is regarded as being infinite.
+            overshooted = any([c.cost > self.maximum_cost for c in trial_coins]) if self.maximum_cost >= 0 else False
 
             # if not valid option
             # previous solution must possible
             # adding the last chapter caused solution to overshoot
             # hence last solution must have maximum unlockable
-            if maximum_allowed_usage < total_trial_coins or coins < total_trial_coins:
+            if overshooted or coins < total_trial_coins:
                 # remove last added to get solution
                 explored.remove(chapter)
 

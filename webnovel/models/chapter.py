@@ -1,10 +1,14 @@
 import json
+from dataclasses import dataclass
 from typing import List
 
 import requests
 from bs4 import BeautifulSoup
 
+from ..decorators import deprecated
 
+
+@dataclass
 class Chapter:
     no: int = None
     id: int = None
@@ -14,15 +18,7 @@ class Chapter:
     locked: bool = None
     cost: int = None
 
-    def __init__(self, no=None, _id=None, url=None, title=None, paragraphs=None, locked=None, cost=None):
-        self.no = no
-        self.id = _id
-        self.url = url
-        self.title = title
-        self.paragraphs = paragraphs
-        self.locked = locked
-        self.cost = cost
-
+    @deprecated('use Webnovel.api.ParsedApi.chapter instead')
     def load(self):
         data = requests.get(self.url)
 

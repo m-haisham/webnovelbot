@@ -1,8 +1,8 @@
-from .interface import BaseDecorator
+from .interface import MethodDecorator
 from ..exceptions import NotSignedInException
 
 
-class require_signin(BaseDecorator):
+class require_signin(MethodDecorator):
     """
     signed in checker decorator class
     """

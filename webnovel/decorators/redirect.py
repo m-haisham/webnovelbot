@@ -1,11 +1,11 @@
 import inspect
 
-from .interface import BaseDecorator
+from .interface import MethodDecorator
 
 URL_PARAM = 'url'
 
 
-class redirect(BaseDecorator):
+class redirect(MethodDecorator):
     def __call__(self, *args, **kwargs):
         super.__call__()
 
