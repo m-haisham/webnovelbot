@@ -36,6 +36,9 @@ class Efficient(IAnalyser):
         coins = self.profile.coins
         fastpass = self.profile.fastpass
 
+        if coins <= 0 or fastpass <= 0:
+            return Analysis.empty()
+
         # get cost
         for i in range(len(chapters)):
             if chapters[i].cost is None:
@@ -45,7 +48,11 @@ class Efficient(IAnalyser):
         # sort according to cost
         chapters.sort(key=lambda c: c.cost)
 
-        not_chosen, via_fastpass = chapters[-fastpass:], chapters[:-fastpass]
+        if fastpass == 0:
+            not_chosen = chapters
+            via_fastpass = []
+        else:
+            not_chosen, via_fastpass = chapters[:-fastpass], chapters[-fastpass:]
 
         # get smallest possible coins cost to fit profile
         via_coins: List[Chapter] = []

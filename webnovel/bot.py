@@ -233,6 +233,7 @@ class WebnovelBot:
             for chapter in volume_chapters:
                 chapter = Chapter(
                     no=int(chapter.select_one('a > i').text.strip()),
+                    title=chapter.select_one('a')['title'],
                     url=f"http:{chapter.find('a')['href'].strip()}",
                     locked=bool(chapter.select('a > svg'))
                 )
