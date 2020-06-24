@@ -2,7 +2,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from temp import NOVEL, USER_EMAIL, USER_PASS
 from webnovel import WebnovelBot
-from webnovel.analytic import Efficient
+from webnovel.analytic import ForwardCrawl
 from webnovel.models import Novel
 
 
@@ -73,8 +73,8 @@ if __name__ == '__main__':
     profile = webnovel.profile()
     # profile = Profile(coins=55, fastpass=6)
 
-    # analyser = ForwardCrawl(Novel(id=webnovel.novel_id), profile, maximum_cost=10, on_load=lambda c: focus(c))
-    analyser = Efficient(Novel(id=webnovel.novel_id), profile, on_load=lambda c: focus(c))
+    analyser = ForwardCrawl(Novel(id=webnovel.novel_id), profile, maximum_cost=10, on_load=lambda c: focus(c))
+    # analyser = Efficient(Novel(id=webnovel.novel_id), profile, on_load=lambda c: focus(c))
 
     analysis = webnovel.batch_analyze(analyser)
 

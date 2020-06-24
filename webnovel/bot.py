@@ -340,26 +340,20 @@ class WebnovelBot:
         except NoSuchElementException:
             can_fastpass = False
 
-        WebDriverWait(self.driver, 3)
-
-        button = None
-        should_unlock = True
+        def unlock(button):
+            """
+            :param button: button to click to unlock
+            """
+            ActionChains(self.driver).move_to_element(button).pause(unlock_delay).click().perform()
 
         if coins and can_coin:
             coin_button = self.driver.find_element_by_css_selector(
                 "div[class='lock-group j_lock_btns '] > a[class*='j_unlockChapter']")
-            button = coin_button
+            unlock(coin_button)
 
         elif fastpass and can_fastpass:
             fastpass_button = self.driver.find_element_by_css_selector("div[class^='lock-foot'] > div:nth-child(2) > a")
-            button = fastpass_button
-
-        else:
-            should_unlock = False
-
-        if should_unlock:
-            # unlock
-            ActionChains(self.driver).move_to_element(button).pause(unlock_delay).click().perform()
+            unlock(fastpass_button)
 
     def batch_unlock(self, analysis):
         """
@@ -402,7 +396,7 @@ class WebnovelBot:
 
         :requires: to be signed in
 
-        :param votes: number of votes to cast or indexes of stories in queue to energy_vote
+        :param votes: number of votes to cast or indexes of stories in queue to vote
         :param lead: either 'male' or 'female' options, to specify which list to select
         :param redirect: whether to load the vote page again
         """

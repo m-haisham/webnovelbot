@@ -8,7 +8,10 @@ from ..models import Chapter, Novel, Profile
 
 class Efficient(IAnalyser):
     """
-    calculates the most efficient spending strategy in the given chapters
+    Calculate while abiding by the rules:
+     - cheaper chapters with coins
+     - expensive chapters with fastpass
+     - chapters unlocked using coins must not exceed [maximum_cost] individually
 
     if [maximum_cost] is less than 0 it is considered as being infinite
     """
@@ -36,7 +39,7 @@ class Efficient(IAnalyser):
         coins = self.profile.coins
         fastpass = self.profile.fastpass
 
-        if coins <= 0 or fastpass <= 0:
+        if coins <= 0 and fastpass <= 0:
             return Analysis.empty()
 
         # get cost
