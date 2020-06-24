@@ -13,7 +13,7 @@ class HardLine(IAnalyser):
     - chapter cost higher than or equal to [fastpass_line] would be select as fastpass
     """
 
-    def __init__(self, novel: Novel, profile: Profile, coins_line: bool = None, fastpass_line: bool = None,
+    def __init__(self, novel: Novel, profile: Profile, coins_line: int = None, fastpass_line: int = None,
                  on_load: Callable[[Chapter], None] = None):
         """
         [fastpass_line] and [coins_line] are used to determine which is selected for which

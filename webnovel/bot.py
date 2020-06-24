@@ -6,6 +6,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -19,7 +20,7 @@ BASE_URL = 'https://www.webnovel.com'
 
 
 class WebnovelBot:
-    def __init__(self, driver=None, timeout=10):
+    def __init__(self, driver: WebDriver = None, timeout=10):
         """
         :param driver: selenium web driver to use
         :param timeout: timeout for all class operations
@@ -284,7 +285,7 @@ class WebnovelBot:
             chapter.cost = json.loads(unlock_params)['chapterPrice']
         else:
             chapter.paragraphs = [wrapper.text
-                                  for wrapper in self.driver.find_elements_by_css_selector('.cha-paragraph')]
+                                  for wrapper in self.driver.find_elements_by_css_selector('.cha-paragraph > span > p')]
 
         return chapter
 
