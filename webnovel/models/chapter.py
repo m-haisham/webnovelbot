@@ -25,7 +25,7 @@ class Chapter:
         soup = BeautifulSoup(data.content, 'html.parser')
         locked_content = soup.find('div', {'class': 'j_locked_chap'})
 
-        self.id = self.id_from_url()
+        self.id = self.chapter_id_from_url()
 
         self.no = int(soup.find('span', {'class': 'j_chapIdx'}).text.strip('Chapter ')[:-1])
         self.title = soup.find('div', {'class': 'cha-tit'}).find('h3').text
@@ -37,5 +37,8 @@ class Chapter:
 
         return self
 
-    def id_from_url(self) -> int:
+    def chapter_id_from_url(self) -> int:
         return int(self.url.split('/')[5])
+
+    def novel_id_from_url(self) -> int:
+        return int(self.url.split('/')[4])

@@ -8,6 +8,7 @@ class Novel:
     synopsis: str = None
     genre: str = None
     url: str = None
+    cover_url: str = None
 
     author: str = None
     translator: str = None

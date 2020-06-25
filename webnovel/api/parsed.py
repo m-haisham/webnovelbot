@@ -35,5 +35,6 @@ class ParsedApi(BaseApi):
             id=info['chapterId'],
             title=info['chapterName'],
             url=f'https://www.webnovel.com/book/{novel_id}/{chapter_id}',
+            paragraphs=[para['content'][3:-4] for para in info['contents']],
             cost=info['SSPrice'],
         )

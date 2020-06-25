@@ -30,7 +30,12 @@ class WebnovelBot:
         else:
             self.driver = driver
         self.timeout = timeout
-        self.api = ParsedApi()
+
+    def create_api(self) -> ParsedApi:
+        """
+        :return: Api with cookies of the current selenium driver instance
+        """
+        return ParsedApi(self.driver.get_cookies())
 
     @property
     def novel_id(self):
@@ -189,6 +194,7 @@ class WebnovelBot:
         novel.genre = subinfo_elems[0].text,
         novel.views = subinfo_elems[3].text[:-6],
         novel.url = self.driver.current_url
+        novel.cover_url = f'https://img.webnovel.com/bookcover/{novel.id}'
 
         # ratings are posted up to 5, they are converted to float and normalized to 1
         novel.rating = float(info_elems[3].find_element_by_css_selector('strong').text) / 5.0,
@@ -232,13 +238,20 @@ class WebnovelBot:
 
             chapters = []
             for chapter in volume_chapters:
+                no_element = chapter.select_one('a > i')
+
                 chapter = Chapter(
-                    no=int(chapter.select_one('a > i').text.strip()),
                     title=chapter.select_one('a')['title'],
                     url=f"http:{chapter.find('a')['href'].strip()}",
                     locked=bool(chapter.select('a > svg'))
                 )
-                chapter.id = chapter.id_from_url()
+
+                if no_element is not None:
+                    chapter.no = int(no_element.text.strip())
+                else:
+                    chapter.no = 0
+
+                chapter.id = chapter.chapter_id_from_url()
 
                 chapters.append(chapter)
 
