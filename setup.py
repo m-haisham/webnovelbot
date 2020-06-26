@@ -15,9 +15,10 @@ setup(
     long_description_content_type='text/markdown',
 
     install_requires=[
+        'selenium',
         'requests',
         'bs4',
-        'selenium',
+        'lxml',
     ],
 
     classifiers=[

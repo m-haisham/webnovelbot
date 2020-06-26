@@ -51,7 +51,7 @@ class BaseApi:
         return self.validate(response)
 
     def validate(self, response) -> Dict:
-        parsed = json.loads(response.text)
+        parsed = json.loads(response.content)
         if parsed['code'] != 0:
             raise ApiError(parsed['msg'])
 

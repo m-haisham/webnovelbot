@@ -66,7 +66,7 @@ class ForwardCrawl(IAnalyser):
             explored.sort(key=lambda ch: ch.cost)
 
             # split such that the ones that cost most are assigned to fastpass
-            trial_coins, trial_fastpass = explored[:-fastpass], explored[-fastpass:]
+            trial_coins, trial_fastpass = self._split(explored, fastpass)
 
             # check if valid solution
             total_trial_coins: int = sum([c.cost for c in trial_coins])
@@ -87,9 +87,22 @@ class ForwardCrawl(IAnalyser):
                 explored.sort(key=lambda ch: ch.cost)
 
                 # split such that the ones that cost most are assigned to fastpass
-                trial_coins, trial_fastpass = explored[:-fastpass], explored[-fastpass:]
+                trial_coins, trial_fastpass = self._split(explored, fastpass)
 
                 # return solution
                 return Analysis(via_coins=trial_coins, via_fastpass=trial_fastpass)
 
             i += 1
+
+    def _split(self, chapters: List, fastpass: int):
+        """
+        split chapters so that most expensive will be to fastpass
+
+        :param chapters: sorted chapters to split
+        :param fastpass: amount of fastpass
+        :return: coins, fastpass
+        """
+        if fastpass == 0:
+            return chapters, []
+        else:
+            return chapters[:-fastpass], chapters[-fastpass:]
