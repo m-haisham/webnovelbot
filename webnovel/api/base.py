@@ -19,6 +19,7 @@ class BaseApi:
         self.session = requests.Session()
         self.has_cookies = bool(cookies)
 
+        # set cookies
         if self.has_cookies:
             for cookie in cookies:
                 cookie = {key: value for key, value in cookie.items() if key not in ['httpOnly', 'expiry', 'sameSite']}

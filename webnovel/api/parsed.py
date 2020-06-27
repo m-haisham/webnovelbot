@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from bs4 import BeautifulSoup
 
@@ -7,12 +7,12 @@ from ..models import Chapter
 
 
 class ParsedApi(BaseApi):
-    def toc(self, novel_id) -> List[List[Chapter]]:
+    def toc(self, novel_id) -> Dict[str, List[Chapter]]:
         response = super().toc(novel_id)
 
         volume_items = response['data']['volumeItems']
 
-        volumes = []
+        volumes = {}
         for volume_item in volume_items:
             chapters = [
                 Chapter(
@@ -23,7 +23,9 @@ class ParsedApi(BaseApi):
                 ) for item in volume_item['chapterItems']
             ]
 
-            volumes.append(chapters)
+            _name = volume_item['name']
+            volume_name = f'Volume {volume_item["index"]}' + (f': {_name}' if _name else '')
+            volumes[volume_name] = chapters
 
         return volumes
 

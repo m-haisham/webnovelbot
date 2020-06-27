@@ -1,5 +1,6 @@
 import json
-from typing import List, Union
+import re
+from typing import List, Union, Dict
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -212,11 +213,11 @@ class WebnovelBot:
 
         return novel
 
-    def table_of_contents(self):
+    def table_of_contents(self) -> Dict[str, List[Chapter]]:
         """
         Must be used while a particular novel is loaded to driver
 
-        :return: list of volumes in order
+        :return: dict of volumes in order, where key is volume name and value the chapters
         """
 
         # load table of contents
@@ -232,7 +233,7 @@ class WebnovelBot:
         # bs4 is faster than selenium selectors
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         volume_elements = soup.find_all('div', {'class': 'volume-item'})
-        volumes = []
+        volumes = {}
         for volume_element in volume_elements:
             volume_chapters = volume_element.find_all('li', {'class': 'g_col_6'})
 
@@ -255,7 +256,9 @@ class WebnovelBot:
 
                 chapters.append(chapter)
 
-            volumes.append(chapters)
+            _name = volume_element.find('h4').text
+            volume_name = re.sub(r'\n +', '', _name).replace(':', ': ')
+            volumes[volume_name] = chapters
 
         return volumes
 
@@ -398,7 +401,7 @@ class WebnovelBot:
         """
         # get all locked chapters
         locked_chapters = []
-        for chapters in self.table_of_contents():
+        for chapters in self.table_of_contents().values():
             locked_chapters = locked_chapters + [chapter for chapter in chapters if chapter.locked]
 
         return analyser.analyse(locked_chapters)
