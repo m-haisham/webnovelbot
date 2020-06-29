@@ -178,8 +178,7 @@ class WebnovelBot:
     def novel(self, url=None) -> Novel:
         """
         :param url: url to novel
-        :return: info about novel { title, genre, views, rating, review_count, author, translator[Conditional],
-                                    editor[Conditional] }
+        :return: Novel object
         """
         info_elems = self.driver.find_elements_by_css_selector('._mn > *')
         subinfo_elems = info_elems[1].find_elements_by_css_selector(':scope > *')
@@ -193,7 +192,7 @@ class WebnovelBot:
 
         novel.synopsis = self.driver.find_element_by_css_selector("div[class*='j_synopsis'] > p").text
         novel.genre = subinfo_elems[0].text,
-        novel.views = subinfo_elems[3].text[:-6],
+        novel.views = subinfo_elems[-1].text[:-6],
         novel.url = self.driver.current_url
         novel.cover_url = f'https://img.webnovel.com/bookcover/{novel.id}'
 

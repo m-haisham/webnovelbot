@@ -20,6 +20,7 @@ class ParsedApi(BaseApi):
                     id=item['id'],
                     url=f'https://www.webnovel.com/book/{novel_id}/{item["id"]}',
                     title=item['name'],
+                    locked=not int(item['isAuth']),
                 ) for item in volume_item['chapterItems']
             ]
 
@@ -41,4 +42,5 @@ class ParsedApi(BaseApi):
             url=f'https://www.webnovel.com/book/{novel_id}/{chapter_id}',
             paragraphs=[BeautifulSoup(para['content'], 'lxml').text for para in info['contents']],
             cost=info['SSPrice'],
+            locked=not int(info['isAuth']),
         )
