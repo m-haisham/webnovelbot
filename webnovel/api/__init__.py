@@ -1,2 +1,2 @@
 from .base import BaseApi
-from .parsed import ParsedApi
+from .parsed import UnlockType, ParsedApi

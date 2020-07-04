@@ -3,6 +3,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from temp import NOVEL, USER_EMAIL, USER_PASS
 from webnovel import WebnovelBot
 from webnovel.analytic import ForwardCrawl
+from webnovel.api import UnlockType
 from webnovel.models import Novel
 
 
@@ -65,6 +66,7 @@ if __name__ == '__main__':
     webnovel = WebnovelBot(timeout=20)
 
     webnovel.driver.get(NOVEL)
+    novel_id = webnovel.novel_id
 
     webnovel.signin(USER_EMAIL, USER_PASS)
 
@@ -73,13 +75,22 @@ if __name__ == '__main__':
     profile = webnovel.profile()
     # profile = Profile(coins=55, fastpass=6)
 
+    api = webnovel.create_api()
+    webnovel.close()
+
+    profile.coins = min(profile.coins, 100)
+
     analyser = ForwardCrawl(Novel(id=webnovel.novel_id), profile, maximum_cost=10, on_load=lambda c: focus(c))
     # analyser = Efficient(Novel(id=webnovel.novel_id), profile, on_load=lambda c: focus(c))
 
-    analysis = webnovel.batch_analyze(analyser)
+    locked_chapters = [chapter for i, chapters in enumerate(api.toc(novel_id).values()) if i >= 2 for chapter in
+                       chapters]
+
+    analysis = analyser.analyse(locked_chapters)
 
     show(analysis)
 
-    webnovel.batch_unlock(analysis)
-
-    webnovel.close()
+    for c in analysis.via_coins:
+        api.unlock(c.novel_id_from_url(), c, UnlockType.coins)
+    for c in analysis.via_fastpass:
+        api.unlock(c.novel_id_from_url(), c, UnlockType.fastpass)

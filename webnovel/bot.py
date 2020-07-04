@@ -12,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .analytic import IAnalyser, Analysis
-from .api import ParsedApi
+from .api import ParsedApi, UnlockType
 from .decorators import require_signin, redirect
 from .exceptions import NotSignedInException, NotANovelUrlException
 from .models import Profile, Novel, Chapter
@@ -371,21 +371,32 @@ class WebnovelBot:
             fastpass_button = self.driver.find_element_by_css_selector("div[class^='lock-foot'] > div:nth-child(2) > a")
             unlock(fastpass_button)
 
-    def batch_unlock(self, analysis):
+    def batch_unlock(self, analysis, selenium=False):
         """
         unlocks all the chapters in analysis according to assortment
+        Uses api to do post requests by default
 
         :require: to be signed in
 
-        :param analysis:
-        :return:
+        :param selenium: [Outdated] whether to use selenium to unlock, default is [False]
+        :param analysis: object to denote which to unlock in which
+        :return: None
         """
-        # signed in check not in method
-        # as mainly consisting of [unlock_chapter] which has signin check
-        for c in analysis.via_coins:
-            self.unlock_chapter(c.url, coins=True)
-        for c in analysis.via_fastpass:
-            self.unlock_chapter(c.url, fastpass=True)
+        if selenium:
+            # [outdated]
+            # signed in check not in method
+            # as mainly consisting of [unlock_chapter] which has signin check
+            for c in analysis.via_coins:
+                self.unlock_chapter(c.url, coins=True)
+            for c in analysis.via_fastpass:
+                self.unlock_chapter(c.url, fastpass=True)
+
+        else:
+            api = self.create_api()
+            for c in analysis.via_coins:
+                api.unlock(c.novel_id_from_url(), c, UnlockType.coins)
+            for c in analysis.via_fastpass:
+                api.unlock(c.novel_id_from_url(), c, UnlockType.fastpass)
 
     @redirect
     def batch_analyze(self, analyser: IAnalyser, url=None) -> Analysis:
@@ -399,9 +410,7 @@ class WebnovelBot:
         :return: list of unlocked chapters
         """
         # get all locked chapters
-        locked_chapters = []
-        for chapters in self.table_of_contents().values():
-            locked_chapters = locked_chapters + [chapter for chapter in chapters if chapter.locked]
+        locked_chapters = [chapter for chapters in self.table_of_contents().values() for chapter in chapters]
 
         return analyser.analyse(locked_chapters)
 

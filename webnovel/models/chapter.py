@@ -17,6 +17,7 @@ class Chapter:
     paragraphs: List[str] = None
     locked: bool = None
     cost: int = None
+    type: int = None
 
     @deprecated('use Webnovel.api.ParsedApi.chapter instead')
     def load(self):

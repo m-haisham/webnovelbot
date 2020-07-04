@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, List
 
 import requests
 import requests.cookies
@@ -28,7 +28,7 @@ class BaseApi:
         else:
             self.session.cookies.set_policy(BlockAll())
 
-    def chapter(self, novel_id, chapter_id) -> Dict:
+    def chapter(self, novel_id: int, chapter_id: int) -> Dict:
         response = self.session.get(
             'https://www.webnovel.com/apiajax/chapter/GetContent',
             params={
@@ -40,12 +40,40 @@ class BaseApi:
 
         return self.validate(response)
 
-    def toc(self, novel_id) -> Dict:
+    def toc(self, novel_id: int) -> Dict:
         response = self.session.get(
             'https://www.webnovel.com/apiajax/chapter/GetChapterList',
             params={
                 '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
                 'bookId': novel_id,
+            }
+        )
+
+        return self.validate(response)
+
+    def unlock(self, novel_id: int, chapters: List[Dict], unlock_type: int):
+        """
+        Unlocks chapters provided with method specified
+
+        Requires cookies
+
+        :param novel_id: id of novel
+        :param chapters: list of dict objects containing the following keys,
+         [chapterPrice: int],
+         [chapterId: str],
+         [chapterType: int]
+
+        :param unlock_type: 3 to unlock with coins | 5 to unlock with fastpass
+        :return:
+        """
+
+        response = self.session.post(
+            'https://www.webnovel.com/apiajax/SpiritStone/useSSAjax',
+            data={
+                '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
+                'bookId': novel_id,
+                'chapters': json.dumps(chapters),
+                'unlockType': unlock_type
             }
         )
 
