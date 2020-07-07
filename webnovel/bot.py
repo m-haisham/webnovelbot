@@ -18,6 +18,7 @@ from .exceptions import NotSignedInException, NotANovelUrlException
 from .models import Profile, Novel, Chapter
 
 BASE_URL = 'https://www.webnovel.com'
+EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html'
 
 
 class WebnovelBot:
@@ -48,6 +49,19 @@ class WebnovelBot:
             raise NotANovelUrlException
 
         return url.split('/')[4]
+
+    @property
+    def user_id(self):
+        """
+        :return: current user id
+        """
+        uid = self.driver.get_cookie('uid')
+
+        # inline signing check
+        if uid is None:
+            raise NotSignedInException
+
+        return int(uid['value'])
 
     def home(self):
         """
@@ -82,37 +96,20 @@ class WebnovelBot:
             for field, value in field_mapper.items()
         }
 
-        return Profile(**profile_data)
+        return Profile(id=self.user_id, **profile_data)
 
     def signin(self, email, password):
         """
         signin to webnovel using :param email: and :param password:
         """
-
-        # open signin frame
-        login_btn = self.driver.find_element_by_css_selector('.login-btn')
-        login_btn.click()
-
-        # switch to signin frame
-        self.driver.switch_to.frame('frameLG')
-
-        # wait till signin buttons loaded
-        WebDriverWait(self.driver, self.timeout).until(
-            EC.presence_of_element_located((By.CLASS_NAME, 'm-login-bts'))
-        )
-
-        # go to signin by email
-        login_email = self.driver.find_element_by_css_selector("a[title='Log in with Email']")
-        login_email.click()
+        # go to login path
+        self.driver.get(EMAIL_LOGIN_URL)
 
         self.driver.find_element_by_class_name('loginEmail').send_keys(email)
         self.driver.find_element_by_class_name('loginPass').send_keys(password)
 
         signin_btn = self.driver.find_element_by_id('submit')
         signin_btn.click()
-
-        # switch back to default frame
-        self.driver.switch_to.default_content()
 
         # wait till signin success
         WebDriverWait(self.driver, self.timeout).until(
@@ -135,14 +132,14 @@ class WebnovelBot:
 
     def is_signedin(self) -> bool:
         """
+        checks for the existance of user id cookie
+
         :return: whether we are currently signed in
         """
-        try:
-            self.driver.find_element_by_css_selector("a[title='My Profile']")
-        except NoSuchElementException:
+        if self.driver.get_cookie('uid') is None:
             return False
-
-        return True
+        else:
+            return True
 
     @require_signin
     def library(self, redirect: bool = True) -> List[Novel]:

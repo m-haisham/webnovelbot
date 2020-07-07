@@ -27,6 +27,13 @@ def claim_daily(bot, novel=None):
         bot.driver.get(novel)
 
 
+def format_title(s, l=20):
+    if len(s) > l:
+        return s[:l - 1] + '-'
+
+    return s + (' ' * (l - len(s)))
+
+
 def show(analysis):
     for c in analysis.via_coins:
         c.ptype = 'coins'
@@ -35,20 +42,15 @@ def show(analysis):
 
     a = sorted(analysis.via_coins + analysis.via_fastpass, key=lambda c: c.no)
 
-    def format_title(s, l=20):
-        if len(s) > l:
-            return s[:l - 1] + '-'
-
-        return s + (' ' * (l - len(s)))
-
-    print('Chapters')
-    print('--------')
+    print()
+    print('Analysis report')
+    print('---------------')
     for c in a:
         print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: {c.ptype}')
 
     print()
-    print('    total cost')
-    print('------------------')
+    print('total cost')
+    print('----------')
     print(f'   coins: {analysis.coins_cost}')
     print(f'fastpass: {analysis.fastpass_cost}')
 
@@ -62,8 +64,12 @@ def focus(chapter):
     ActionChains(webnovel.driver).move_to_element(element).perform()
 
 
+def progress(c):
+    print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}')
+
+
 if __name__ == '__main__':
-    webnovel = WebnovelBot(timeout=20)
+    webnovel = WebnovelBot(timeout=360)
 
     webnovel.driver.get(NOVEL)
     novel_id = webnovel.novel_id
@@ -78,19 +84,30 @@ if __name__ == '__main__':
     api = webnovel.create_api()
     webnovel.close()
 
-    profile.coins = min(profile.coins, 100)
+    # limit coin expenditure
+    profile.coins = min(profile.coins, 70)
 
-    analyser = ForwardCrawl(Novel(id=webnovel.novel_id), profile, maximum_cost=10, on_load=lambda c: focus(c))
-    # analyser = Efficient(Novel(id=webnovel.novel_id), profile, on_load=lambda c: focus(c))
+    analyser = ForwardCrawl(Novel(id=novel_id), profile, maximum_cost=10, on_load=progress)
+    # analyser = Efficient(Novel(id=novel_id), profile, on_load=lambda c: focus(c))
 
-    locked_chapters = [chapter for i, chapters in enumerate(api.toc(novel_id).values()) if i >= 2 for chapter in
-                       chapters]
+    locked_chapters = [chapter for i, chapters in enumerate(api.toc(novel_id).values()) for chapter in
+                       chapters if chapter.no > 160 and chapter.locked]
 
+    print()
+    print('Analysing')
+    print('---------------')
     analysis = analyser.analyse(locked_chapters)
 
     show(analysis)
 
+    print()
+    print('Unlocking')
+    print('---------')
     for c in analysis.via_coins:
+        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: coins | ', end='')
         api.unlock(c.novel_id_from_url(), c, UnlockType.coins)
+        print('unlocked')
     for c in analysis.via_fastpass:
+        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: fastpass | ', end='')
         api.unlock(c.novel_id_from_url(), c, UnlockType.fastpass)
+        print('unlocked')

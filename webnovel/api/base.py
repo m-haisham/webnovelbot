@@ -79,6 +79,16 @@ class BaseApi:
 
         return self.validate(response)
 
+    def profile(self):
+        """
+        get profile html
+
+        :return: html
+        """
+        return self.session.get(
+            f'https://www.webnovel.com/profile/{self.session.cookies.get("uid")}?appId=10'
+        ).content
+
     def validate(self, response) -> Dict:
         parsed = json.loads(response.content)
         if parsed['code'] != 0:
