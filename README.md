@@ -66,7 +66,7 @@ UrlTools provides methods to convert and from `novel_id`, `chapter_id`, and `pro
 
 Supports multiple analytic tools with an easily extensible interface
 
-[Read more](#)
+[Read more](https://github.com/mHaisham/webnovelbot/tree/master/webnovel/analytic)
 
 ## Goals
 
