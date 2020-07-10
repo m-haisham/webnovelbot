@@ -29,9 +29,9 @@ setup(
     license="MIT license",
     keywords='console interface progress',
 
-    url='https://github.com/mHaisham/schnittstelle',
+    url='https://github.com/mHaisham/webnovelbot',
     project_urls={
-        'Source code': 'https://github.com/mHaisham/schnittstelle'
+        'Source code': 'https://github.com/mHaisham/webnovelbot'
     },
     packages=find_packages(),
     python_requires='>=3.6'
