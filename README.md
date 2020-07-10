@@ -4,6 +4,12 @@ Webnovel Bot and scraper written in one, optimized for speed.
 
 Provides multiple choices of access for tasks
 
+## Install
+
+```
+pip install webnovelbot
+```
+
 ## Sample
 
 ```python
