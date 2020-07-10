@@ -5,7 +5,7 @@ class UrlTools:
     """
     url conversion tool to and from [novel_id], [chapter_id], and [profile_id]
     """
-    base_url = 'https://www.webnovel.com/book/'
+    base_url = 'https://www.webnovel.com/book'
 
     @staticmethod
     def to_novel_url(novel_id):

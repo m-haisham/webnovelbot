@@ -6,7 +6,7 @@ with open('README.md', 'r') as f:
     long_description = f.read()
 
 setup(
-    name='webnovel',
+    name='webnovelbot',
     version=webnovel.__version__,
     author="Schicksal",
     description="webnovel scraper using selenium",
