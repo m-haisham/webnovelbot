@@ -17,8 +17,9 @@ class Profile:
     def from_html(html: str, user_id=None):
         """
         get profile info using user id
-        user id can be obtained through WebnovelBot.user_id
-        html can be obtained through, BaseApi.profile with cookies
+
+        [html] can be obtained through, BaseApi.html.profile with cookies.
+        [user_id] can be obtained through WebnovelBot.user_id.
 
         :param html: profile page
         :param user_id: id of user profile

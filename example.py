@@ -79,19 +79,21 @@ if __name__ == '__main__':
     # claim_daily(webnovel, NOVEL)
 
     profile = webnovel.profile()
-    # profile = Profile(coins=55, fastpass=6)
 
     api = webnovel.create_api()
     webnovel.close()
 
     # limit coin expenditure
-    profile.coins = min(profile.coins, 70)
+    # profile.coins = min(profile.coins, 70)
 
     analyser = ForwardCrawl(Novel(id=novel_id), profile, maximum_cost=10, on_load=progress)
     # analyser = Efficient(Novel(id=novel_id), profile, on_load=lambda c: focus(c))
 
-    locked_chapters = [chapter for i, chapters in enumerate(api.toc(novel_id).values()) for chapter in
-                       chapters if chapter.no > 160 and chapter.locked]
+    locked_chapters = [
+        chapter
+        for i, chapters in enumerate(api.toc(novel_id).values()) for chapter in chapters
+        if chapter.no > 160 and chapter.locked
+    ]
 
     print()
     print('Analysing')
@@ -104,10 +106,10 @@ if __name__ == '__main__':
     print('Unlocking')
     print('---------')
     for c in analysis.via_coins:
-        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: coins | ', end='')
+        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: coins ... ', end='')
         api.unlock(c.novel_id_from_url(), c, UnlockType.coins)
         print('unlocked')
     for c in analysis.via_fastpass:
-        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: fastpass | ', end='')
+        print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: fastpass ... ', end='')
         api.unlock(c.novel_id_from_url(), c, UnlockType.fastpass)
         print('unlocked')

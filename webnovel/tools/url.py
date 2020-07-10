@@ -1,7 +1,10 @@
 from typing import Tuple
 
 
-class IdTools:
+class UrlTools:
+    """
+    url conversion tool to and from [novel_id], [chapter_id], and [profile_id]
+    """
     base_url = 'https://www.webnovel.com/book/'
 
     @staticmethod
@@ -9,7 +12,7 @@ class IdTools:
         """
         :return: novel url
         """
-        return f'{IdTools.base_url}/{novel_id}'
+        return f'{UrlTools.base_url}/{novel_id}'
 
     @staticmethod
     def from_novel_url(novel_url):
@@ -23,7 +26,7 @@ class IdTools:
         """
         :return: chapter url
         """
-        return f'{IdTools.base_url}/{novel_id}/{chapter_id}'
+        return f'{UrlTools.base_url}/{novel_id}/{chapter_id}'
 
     @staticmethod
     def from_chapter_url(chapter_url) -> Tuple[int, int]:

@@ -5,6 +5,7 @@ import requests
 import requests.cookies
 
 from .cookie import BlockAll
+from .html import HtmlApi
 from ..exceptions import ApiError
 
 
@@ -27,6 +28,9 @@ class BaseApi:
                 self.session.cookies.set_cookie(m_cookie)
         else:
             self.session.cookies.set_policy(BlockAll())
+
+        # html api
+        self.html = HtmlApi(self.session)
 
     def chapter(self, novel_id: int, chapter_id: int) -> Dict:
         response = self.session.get(
@@ -78,16 +82,6 @@ class BaseApi:
         )
 
         return self.validate(response)
-
-    def profile(self):
-        """
-        get profile html
-
-        :return: html
-        """
-        return self.session.get(
-            f'https://www.webnovel.com/profile/{self.session.cookies.get("uid")}?appId=10'
-        ).content
 
     def validate(self, response) -> Dict:
         parsed = json.loads(response.content)
