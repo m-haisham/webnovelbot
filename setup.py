@@ -27,7 +27,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     license="MIT license",
-    keywords='console interface progress',
+    keywords='webnovel novel bot api',
 
     url='https://github.com/mHaisham/webnovelbot',
     project_urls={
