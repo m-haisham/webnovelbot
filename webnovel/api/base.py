@@ -83,6 +83,45 @@ class BaseApi:
 
         return self.validate(response)
 
+    def power_vote(self, novel_id):
+        """
+        Applies single power stone vote to novel
+
+        Requires cookies
+
+        :param novel_id: novel to vote
+        :return: Response
+        """
+        response = self.session.post(
+            'https://www.webnovel.com/apiajax/powerStone/vote',
+            data={
+                '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
+                'bookId': novel_id,
+                'novelType': 0
+            }
+        )
+
+        return self.validate(response)
+
+    def energy_vote(self, novel_id):
+        """
+        Applies single energy stone vote to translation novel release queue
+
+        Requires cookies
+
+        :param novel_id: novel to vote
+        :return: Response
+        """
+        response = self.session.post(
+            'https://www.webnovel.com/apiajax/translationVote/vote',
+            data={
+                '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
+                'bookId': novel_id
+            }
+        )
+
+        return self.validate(response)
+
     def validate(self, response) -> Dict:
         parsed = json.loads(response.content)
         if parsed['code'] != 0:
