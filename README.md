@@ -4,6 +4,12 @@ Webnovel Bot and scraper written in one, optimized for speed.
 
 Provides multiple choices of access for tasks
 
+## Install
+
+```
+pip install webnovelbot
+```
+
 ## Sample
 
 ```python
@@ -66,7 +72,7 @@ UrlTools provides methods to convert and from `novel_id`, `chapter_id`, and `pro
 
 Supports multiple analytic tools with an easily extensible interface
 
-[Read more](#)
+[Read more](https://github.com/mHaisham/webnovelbot/tree/master/webnovel/analytic)
 
 ## Goals
 
