@@ -37,7 +37,10 @@ class UrlTools:
         :return: novel_id, chapter_id
         """
         pieces = chapter_url.split('/')
-        return int(pieces[4]), int(pieces[5])
+        try:
+            return int(pieces[4]), int(pieces[5])
+        except ValueError:
+            return int(pieces[4].split('_')[-1]), int(pieces[5].split('_')[-1])
 
     @staticmethod
     def to_profile_url(profile_id):
