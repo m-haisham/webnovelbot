@@ -16,6 +16,7 @@ from .api import ParsedApi, UnlockType
 from .decorators import require_signin, redirect
 from .exceptions import NotSignedInException, NotANovelUrlException
 from .models import Profile, Novel, Chapter
+from .tools import UrlTools
 
 BASE_URL = 'https://www.webnovel.com'
 EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html'
@@ -48,7 +49,7 @@ class WebnovelBot:
         if 'book' not in url:
             raise NotANovelUrlException
 
-        return url.split('/')[4]
+        return UrlTools.from_novel_url(url)
 
     @property
     def user_id(self):
