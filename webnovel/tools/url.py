@@ -19,7 +19,10 @@ class UrlTools:
         """
         :return: url of novel
         """
-        return int(novel_url.split('/')[4])
+        try:
+            return int(novel_url.split('/')[4])
+        except ValueError:
+            return int(novel_url.split('_')[-1])
 
     @staticmethod
     def to_chapter_url(novel_id, chapter_id):
