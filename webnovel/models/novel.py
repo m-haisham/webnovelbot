@@ -47,13 +47,21 @@ class Novel:
         novel.url = url[:]
         novel.cover_url = f'https://img.webnovel.com/bookcover/{novel.id}'
 
-        # ratings are posted up to 5, they are converted to float and normalized to 1
-        novel.rating = float(info_elems[3].find('strong').text) / 5.0,
-        novel.rating = novel.rating[0]
+        try:
+            # ratings are posted up to 5, they are converted to float and normalized to 1
+            novel.rating = float(info_elems[3].find('strong').text) / 5.0,
+            novel.rating = novel.rating[0]
+        except ValueError:
+            # no ratings
+            novel.rating = None
 
-        # stripped of all non numerals and converted to int
-        novel.review_count = int(
-            info_elems[3].find('small').text.strip('()')[:-8].replace(',', ''))
+        try:
+            # stripped of all non numerals and converted to int
+            novel.review_count = int(
+                info_elems[3].find('small').text.strip('()')[:-8].replace(',', ''))
+        except ValueError:
+            # not enough reviews
+            novel.review_count = None
 
         # writer info
         for i in range(round(len(writerinfo_elems) / 2)):

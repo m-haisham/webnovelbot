@@ -45,7 +45,7 @@ class ParsedApi(BaseApi):
             id=data['chapterId'],
             title=data['chapterName'],
             url=f'https://www.webnovel.com/book/{novel_id}/{chapter_id}',
-            paragraphs=[BeautifulSoup(para['content'], 'lxml').text for para in data['contents']],
+            paragraphs=[para['content'] for para in data['contents']],
             cost=data['SSPrice'],
             locked=not int(data['isAuth']),
             type=int(data['chapterLevel']),
