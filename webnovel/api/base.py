@@ -1,8 +1,8 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import requests
-import requests.cookies
+from requests.cookies import RequestsCookieJar
 
 from .cookie import BlockAll
 from .html import HtmlApi
@@ -14,29 +14,34 @@ class BaseApi:
     Creates direct requests to data api rather than to load web page
     """
 
-    def __init__(self, cookies=None):
+    def __init__(self, cookies: Union[RequestsCookieJar, List[dict], None] = None):
         # as cookies can lead to a rejected response
         # they are all blocked
         self.session = requests.Session()
         self.has_cookies = bool(cookies)
 
         # set cookies
-        if self.has_cookies:
+        if type(cookies) == RequestsCookieJar:
+            self.session.cookies = cookies
+        elif type(cookies) == list:
             for cookie in cookies:
                 cookie = {key: value for key, value in cookie.items() if key not in ['httpOnly', 'expiry', 'sameSite']}
                 m_cookie = requests.cookies.create_cookie(**cookie)
                 self.session.cookies.set_cookie(m_cookie)
-        else:
+        elif cookies is None:
             self.session.cookies.set_policy(BlockAll())
+            pass
+        else:
+            raise TypeError("'cookies' was of unrecognized type; must be (RequestsCookieJar, List[dict cookie], None)")
 
         # html api
         self.html = HtmlApi(self.session)
 
     def chapter(self, novel_id: int, chapter_id: int) -> Dict:
         response = self.session.get(
-            'https://www.webnovel.com/apiajax/chapter/GetContent',
+            'https://www.webnovel.com/go/pcm/chapter/GetContent',
             params={
-                '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
+                # '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
                 'bookId': novel_id,
                 'chapterId': chapter_id
             }
