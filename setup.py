@@ -5,6 +5,9 @@ import webnovel
 with open('README.md', 'r') as f:
     long_description = f.read()
 
+with open('requirements.txt', 'r') as f:
+    requirements = f.readlines()
+
 setup(
     name='webnovelbot',
     version=webnovel.__version__,
@@ -14,12 +17,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
 
-    install_requires=[
-        'selenium',
-        'requests',
-        'bs4',
-        'lxml',
-    ],
+    install_requires=requirements,
 
     classifiers=[
         'License :: OSI Approved :: MIT License',
