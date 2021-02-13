@@ -46,7 +46,7 @@ class ParsedApi(BaseApi):
             title=data['chapterName'],
             url=f'https://www.webnovel.com/book/{novel_id}/{chapter_id}',
             paragraphs=[para['content'] for para in data['contents']],
-            cost=data['SSPrice'],
+            cost=data['price'],
             locked=not int(data['isAuth']),
             type=int(data['chapterLevel']),
         )

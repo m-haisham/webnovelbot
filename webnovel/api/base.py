@@ -39,7 +39,7 @@ class BaseApi:
 
     def chapter(self, novel_id: int, chapter_id: int) -> Dict:
         response = self.session.get(
-            'https://www.webnovel.com/go/pcm/chapter/GetContent',
+            'https://www.webnovel.com/go/pcm/chapter/getContent',
             params={
                 # '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
                 'bookId': novel_id,
