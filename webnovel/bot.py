@@ -5,7 +5,7 @@ from typing import List, Union, Dict
 from bs4 import BeautifulSoup
 from requests.cookies import RequestsCookieJar
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -24,6 +24,8 @@ EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html'
 
 
 class WebnovelBot:
+    pref_timeout = 10
+
     def __init__(self, driver: WebDriver = None, timeout=10):
         """
         :param driver: selenium web driver to use
@@ -117,12 +119,17 @@ class WebnovelBot:
         WebDriverWait(self.driver, self.timeout).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='My Profile']"))
         )
+
         # wait for the preferences popup to load and click it away
-        WebDriverWait(self.driver, 60).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".j_post_preference"))
-        )
-        signin_btn = self.driver.find_element_by_class_name('j_post_preference')  # bt _m mw160 j_post_preference
-        signin_btn.click()
+        try:
+            WebDriverWait(self.driver, self.pref_timeout).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".j_post_preference"))
+            )
+
+            pref_button = self.driver.find_element_by_class_name('j_post_preference')  # bt _m mw160 j_post_preference
+            pref_button.click()
+        except TimeoutException:
+            pass
 
     def add_cookiejar(self, cookies: RequestsCookieJar):
 
