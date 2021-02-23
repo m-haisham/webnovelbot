@@ -3,6 +3,7 @@ import re
 from typing import List, Union, Dict
 
 from bs4 import BeautifulSoup
+from requests.cookies import RequestsCookieJar
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -120,8 +121,23 @@ class WebnovelBot:
         WebDriverWait(self.driver, 60).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".j_post_preference"))
         )
-        signin_btn = self.driver.find_element_by_class_name('j_post_preference') # bt _m mw160 j_post_preference
+        signin_btn = self.driver.find_element_by_class_name('j_post_preference')  # bt _m mw160 j_post_preference
         signin_btn.click()
+
+    def add_cookiejar(self, cookies: RequestsCookieJar):
+
+        # selenium prevents adding cookies of domains that arent from the currently active url
+        # this code makes sure we are in webnovel
+        if not self.driver.current_url.startswith(BASE_URL):
+            self.driver.get(BASE_URL)
+
+        for cookie in cookies:
+            self.driver.add_cookie({
+                'name': cookie.name,
+                'value': cookie.value,
+                'domain': cookie.domain,
+                'path': cookie.path,
+            })
 
     @require_signin
     def signout(self):

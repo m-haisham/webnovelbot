@@ -6,59 +6,47 @@ Provides multiple choices of access for tasks
 
 ## Install
 
-```
+```bash
 pip install webnovelbot
 ```
 
-## Sample
+or
+
+```bash
+pip install git+https://github.com/mHaisham/webnovelbot.git
+```
+
+## [Sample][1]
+
+follow the [link][1] for an example usage
+
+[1]: https://github.com/mHaisham/webnovelbot/blob/master/example.py
+
+## Cookies
+
+Webnovelbot supports using cookies from other web browsers in both selenium and api using class `Cookies`
+
+It currently supports all browsers supported by [browser_cookie3](https://github.com/borisbabic/browser_cookie3)
+
+`chrome` `firefox` `opera` `edge` `chromium`
 
 ```python
+from webnovel import WebnovelBot, Cookies
+from webnovel.api import ParsedApi
+
 webnovel = WebnovelBot(timeout=360)
 
-webnovel.driver.get(NOVEL)
+cookiejar = Cookies.from_browser('chrome')
 
-# get the novel id of current loaded novel
-novel_id = webnovel.novel_id
+# this will load the cookie jar into selenium
+# depending on what you want to do after, you may want to reload the page
+webnovel.add_cookiejar(cookiejar)
 
-webnovel.signin(USER_EMAIL, USER_PASS)
-
-# claim_daily(webnovel, NOVEL)
-
-profile = webnovel.profile()
-
-api = webnovel.create_api()
-webnovel.close()
-
-# limit coin expenditure
-# profile.coins = min(profile.coins, 70)
-
-# on_load is called after each response to request
-# may be used to cache the requests
-analyser = ForwardCrawl(Novel(id=novel_id), profile, maximum_cost=10, on_load=progress)
-
-locked_chapters = [
-    chapter
-    for i, chapters in enumerate(api.toc(novel_id).values()) for chapter in chapters
-    if chapter.no > 160 and chapter.locked
-]
-
-print()
-print('Analysing')
-print('---------------')
-analysis = analyser.analyse(locked_chapters)
-
-print()
-print('Unlocking')
-print('---------')
-for c in analysis.via_coins:
-    print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: coins ... ', end='')
-    api.unlock(c.novel_id_from_url(), c, UnlockType.coins)
-    print('unlocked')
-for c in analysis.via_fastpass:
-    print(f'no: {c.no}, title: {format_title(c.title)}, cost: {c.cost}, type: fastpass ... ', end='')
-    api.unlock(c.novel_id_from_url(), c, UnlockType.fastpass)
-    print('unlocked')
+# this will create the api with the cookie jar
+api = ParsedApi(cookiejar)
 ```
+
+`Cookies` extends from `RequestsCookieJar` hence can be used as a replacement for it and vice-versa
 
 ## Conversion tools
 
@@ -77,5 +65,3 @@ Supports multiple analytic tools with an easily extensible interface
 ## Goals
 
 Primary focus of development is to reduce the usage of selenium.
-
-Selenium is currently mainly being used to get access tokens.

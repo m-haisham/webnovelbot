@@ -30,7 +30,6 @@ class BaseApi:
                 self.session.cookies.set_cookie(m_cookie)
         elif cookies is None:
             self.session.cookies.set_policy(BlockAll())
-            pass
         else:
             raise TypeError("'cookies' was of unrecognized type; must be (RequestsCookieJar, List[dict cookie], None)")
 
