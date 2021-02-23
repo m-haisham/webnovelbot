@@ -116,7 +116,10 @@ class WebnovelBot:
         WebDriverWait(self.driver, self.timeout).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='My Profile']"))
         )
-        # click the preferences button away
+        # wait for the preferences popup to load and click it away
+        WebDriverWait(self.driver, 60).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".j_post_preference"))
+        )
         signin_btn = self.driver.find_element_by_class_name('j_post_preference') # bt _m mw160 j_post_preference
         signin_btn.click()
 
@@ -508,6 +511,6 @@ class WebnovelBot:
         :return: profile button element
         """
         profile_button = self.driver.find_element_by_css_selector("div[class^='g_user'][class*='g_dropdown']")
-        ActionChains(self.driver).click(profile_button).perform()
+        profile_button.click()
 
         return profile_button
