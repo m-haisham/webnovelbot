@@ -5,7 +5,7 @@ from typing import List, Union, Dict
 from bs4 import BeautifulSoup
 from requests.cookies import RequestsCookieJar
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementClickInterceptedException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -464,9 +464,8 @@ class WebnovelBot:
         elif type(votes) == int:
             indexes = range(votes)
 
-        vote_buttons = [tile.find_element_by_css_selector('._voteBtn')
-                        for tile
-                        in self.driver.find_elements_by_css_selector(f'#List{lead.capitalize()} > *')]
+        lead_list = self.driver.find_element_by_css_selector(f'#List{lead.capitalize()}')
+        vote_buttons = lead_list.find_elements_by_css_selector('._voteBtn')
 
         for i in indexes:
             vote_buttons[i].click()
@@ -500,7 +499,7 @@ class WebnovelBot:
 
         # wait till popup closes
         WebDriverWait(self.driver, self.timeout).until_not(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='taskMod'][class*='_on']"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div#taskMod._on"))
         )
 
     @require_signin
@@ -519,10 +518,17 @@ class WebnovelBot:
             self.driver.get(url)
 
         # get power stone energy_vote button
-        power_button = self.driver.find_element_by_css_selector(".j_power_btn_area > .j_vote_power")
+        power_button = self.driver.find_element_by_css_selector(".j_vote_power")
+
+        # using an action chain to delay each subsequent click since
+        # webnovel button animation blocks clicks
+        chain = ActionChains(self.driver)
+        chain.move_to_element(power_button)
 
         for _ in range(repeat):
-            power_button.click()
+            chain.click().pause(1)
+
+        chain.perform()
 
     def close(self):
         self.driver.close()
@@ -534,6 +540,11 @@ class WebnovelBot:
         :return: profile button element
         """
         profile_button = self.driver.find_element_by_css_selector("div[class^='g_user'][class*='g_dropdown']")
-        profile_button.click()
+
+        # even though the exception is thrown (with good reason) it seems to open profile
+        try:
+            profile_button.click()
+        except ElementClickInterceptedException:
+            pass
 
         return profile_button
