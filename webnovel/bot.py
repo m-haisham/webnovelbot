@@ -130,12 +130,12 @@ class WebnovelBot:
         # wait until redirected
         wait.until(lambda driver: (
                 driver.current_url != EMAIL_LOGIN_URL
-                or driver.find_element_by_css_selector('#google-code-html iframe')  # checks if captcha appeared
+                or driver.find_elements_by_css_selector('#google-code-html iframe')  # checks if captcha appeared
         ))
 
         # this handles the cases where the captcha has appeared
-        captcha = self.driver.find_element_by_css_selector('#google-code-html iframe')
-        if captcha:
+        captchas = self.driver.find_elements_by_css_selector('#google-code-html iframe')
+        if len(captchas) > 0:
             if not manual:
                 raise CaptchaException
 
