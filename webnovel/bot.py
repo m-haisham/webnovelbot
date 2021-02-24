@@ -24,7 +24,7 @@ EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html'
 
 
 class WebnovelBot:
-    pref_timeout = 10
+    min_timeout = 10
 
     def __init__(self, driver: WebDriver = None, timeout=10):
         """
@@ -122,7 +122,7 @@ class WebnovelBot:
 
         # wait for the preferences popup to load and click it away
         try:
-            WebDriverWait(self.driver, self.pref_timeout).until(
+            WebDriverWait(self.driver, self.min_timeout).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".j_post_preference"))
             )
 
@@ -465,7 +465,11 @@ class WebnovelBot:
             indexes = range(votes)
 
         lead_list = self.driver.find_element_by_css_selector(f'#List{lead.capitalize()}')
-        vote_buttons = lead_list.find_elements_by_css_selector('._voteBtn')
+        vote_buttons = lead_list.find_elements_by_css_selector('.j_canVote._voteBtn')
+
+        # this checks whether user can vote / has energy stones
+        if not vote_buttons:
+            return
 
         for i in indexes:
             vote_buttons[i].click()
@@ -481,12 +485,11 @@ class WebnovelBot:
         self._focus_profile()
 
         # click to show claim_tasks
-        show_tasks = self.driver.find_element_by_css_selector('.j_show_task_mod')
-        show_tasks.click()
+        self.driver.execute_script("document.querySelector('.j_show_task_mod').click()")
 
         # wait till tasks are loaded
         WebDriverWait(self.driver, timeout=self.timeout).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '.j_daily_task'))
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.task-list-item'))
         )
 
         # claim all rewards
@@ -516,9 +519,19 @@ class WebnovelBot:
         """
         if url is not None:
             self.driver.get(url)
+        elif re.fullmatch(r'https://.+?/book/.+?(/|$)', self.driver.current_url):
+            raise ValueError('currently loaded url is not a valid novel url')
+
+        WebDriverWait(self.driver, self.timeout).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.j_vote_power'))
+        )
 
         # get power stone energy_vote button
-        power_button = self.driver.find_element_by_css_selector(".j_vote_power")
+        # exception is thrown when user has no power stones
+        try:
+            power_button = self.driver.find_element_by_css_selector(".j_vote_power._on")
+        except NoSuchElementException:
+            return
 
         # using an action chain to delay each subsequent click since
         # webnovel button animation blocks clicks

@@ -24,3 +24,11 @@ class HtmlApi:
         return self.session.get(
             f'https://www.webnovel.com/profile/{self.session.cookies.get("uid")}?appId=10'
         ).content
+
+    def vote(self):
+        """
+        :return: voting page html
+        """
+        return self.session.get(
+            'https://www.webnovel.com/vote'
+        ).content

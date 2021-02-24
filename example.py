@@ -2,7 +2,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from temp import NOVEL, USER_EMAIL, USER_PASS
 from webnovel import WebnovelBot
-from webnovel.analytic import ForwardCrawl
+from webnovel.analytic import Efficient
 from webnovel.api import UnlockType
 from webnovel.models import Novel
 
@@ -16,15 +16,9 @@ def slugify(s):
 
 def claim_daily(bot, novel=None):
     # claim daily fast pass
-    bot.power_vote()
+    bot.power_vote(novel)
     bot.claim_tasks()
     bot.energy_vote([1])
-
-    import time
-    time.sleep(5)
-
-    if novel is not None:
-        bot.driver.get(novel)
 
 
 def format_title(s, l=20):
@@ -86,13 +80,13 @@ if __name__ == '__main__':
     # limit coin expenditure
     # profile.coins = min(profile.coins, 70)
 
-    analyser = ForwardCrawl(Novel(id=novel_id), profile, maximum_cost=10, on_load=progress)
-    # analyser = Efficient(Novel(id=novel_id), profile, on_load=lambda c: focus(c))
+    # analyser = ForwardCrawl(Novel(id=novel_id), profile, maximum_cost=10, on_load=progress)
+    analyser = Efficient(Novel(id=novel_id), profile, on_load=progress)
 
     locked_chapters = [
         chapter
         for i, chapters in enumerate(api.toc(novel_id).values()) for chapter in chapters
-        if chapter.no > 160 and chapter.locked
+        if chapter.locked
     ]
 
     print()
@@ -101,6 +95,15 @@ if __name__ == '__main__':
     analysis = analyser.analyse(locked_chapters)
 
     show(analysis)
+
+    try:
+        input('\nRequesting permission to unlock chapters')
+    except KeyboardInterrupt:
+        print('Permission denied')
+
+        import sys
+
+        sys.exit()
 
     print()
     print('Unlocking')
