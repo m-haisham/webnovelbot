@@ -22,6 +22,38 @@ follow the [link][1] for an example usage
 
 [1]: https://github.com/mHaisham/webnovelbot/blob/master/example.py
 
+## Signin
+
+there are a few hiccups that one may encounter during signing in to webnovel
+
+- **Captcha:** During the signin process user can be asked to fill in a google captcha
+
+- **Guard:** After clicking the signin button the form can redirect the user to a guard website
+
+you can handle then in different ways, `signin` method takes a variable `manual`
+which defaults to `False`. Behaviour of the function changes depending on it.
+
+### `manual=False`
+
+When manual is false signin would throw exceptions corresponding to the situation 
+
+```python
+try:
+    webnovel.signin(USER_EMAIL, USER_PASS)
+except CaptchaException: 
+    pass
+except GuardException:
+    pass
+```
+
+### `manual=True`
+
+When manual is true the process would be expecting user input during the above mentioned situations.
+
+It would by default wait 15 minutes for user input before throwing a `TimeoutException`.
+
+You may define a custom time by setting `webnovel.user_timeout`
+
 ## Cookies
 
 Webnovelbot supports using cookies from other web browsers in both selenium and api using class `Cookies`

@@ -15,7 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from .analytic import IAnalyser, Analysis
 from .api import ParsedApi, UnlockType
 from .decorators import require_signin, redirect
-from .exceptions import NotSignedInException, NotANovelUrlException
+from .exceptions import NotSignedInException, NotANovelUrlException, GuardException, CaptchaException
 from .models import Profile, Novel, Chapter
 from .tools import UrlTools
 
@@ -23,8 +23,10 @@ BASE_URL = 'https://www.webnovel.com'
 EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html'
 GUARD_URL = 'https://passport.webnovel.com/guard.html'
 
+
 class WebnovelBot:
     min_timeout = 10
+    user_timeout = 15 * 60
 
     def __init__(self, driver: WebDriver = None, timeout=10):
         """
@@ -103,11 +105,15 @@ class WebnovelBot:
 
         return Profile(id=self.user_id, **profile_data)
 
-    def signin(self, email, password):
+    def signin(self, email, password, manual=False):
         """
         signin to webnovel using :param email: and :param password:
 
-        :raises ValueError: value error is risen when signin process fails
+        :param manual: setting it to true means that alogorithm can expect manual input when necessary.
+        for example, during captcha or when signin is denied for reasons unknown
+
+        :raises CaptchaException: if manual is false and captcha is required during signin
+        :raises GuardException: if manual is false and signin process redirected to guard
         """
         # go to login path
         self.driver.get(EMAIL_LOGIN_URL)
@@ -119,16 +125,35 @@ class WebnovelBot:
         signin_btn.click()
 
         wait = WebDriverWait(self.driver, self.timeout)
+        wait_user = WebDriverWait(self.driver, self.user_timeout)
 
         # wait until redirected
-        wait.until(lambda driver: driver.current_url != EMAIL_LOGIN_URL)
+        wait.until(lambda driver: (
+                driver.current_url != EMAIL_LOGIN_URL
+                or driver.find_element_by_css_selector('#google-code-html iframe')  # checks if captcha appeared
+        ))
+
+        # this handles the cases where the captcha has appeared
+        captcha = self.driver.find_element_by_css_selector('#google-code-html iframe')
+        if captcha:
+            if not manual:
+                raise CaptchaException
+
+            # wait until user has solved the captcha
+            wait_user.until(lambda driver: driver.current_url != EMAIL_LOGIN_URL)
 
         # check if the redirected url is the guard, guard is shown when password is incorrect
+        signin_timeout = self.timeout
         if self.driver.current_url.startswith(GUARD_URL):
-            raise ValueError('user not found')
+            if not manual:
+                raise GuardException
 
-        # wait till signin success
-        wait.until(
+            # provide chance to login manually
+            self.driver.get(EMAIL_LOGIN_URL)
+            signin_timeout = self.user_timeout
+
+        # wait till signin success ends
+        WebDriverWait(self.driver, signin_timeout).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='My Profile']"))
         )
 

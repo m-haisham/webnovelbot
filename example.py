@@ -6,6 +6,7 @@ from temp import NOVEL, USER_EMAIL, USER_PASS
 from webnovel import WebnovelBot
 from webnovel.analytic import Efficient
 from webnovel.api import UnlockType
+from webnovel.exceptions import GuardException, CaptchaException
 from webnovel.models import Novel
 
 
@@ -70,11 +71,13 @@ if __name__ == '__main__':
     webnovel.driver.get(NOVEL)
     novel_id = webnovel.novel_id
 
-    # signin throws `ValueError` when the specified account cannot be found
+    # signin throws `CaptchaException` and `GuardException` when the specified account cannot be found
     # / redirected to guard
     try:
         webnovel.signin(USER_EMAIL, USER_PASS)
-    except ValueError:
+    except CaptchaException:
+        sys.exit(0)
+    except GuardException:
         sys.exit(0)
 
     # claim_daily(webnovel, NOVEL)
