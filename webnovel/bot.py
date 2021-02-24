@@ -21,7 +21,7 @@ from .tools import UrlTools
 
 BASE_URL = 'https://www.webnovel.com'
 EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html'
-
+GUARD_URL = 'https://passport.webnovel.com/guard.html'
 
 class WebnovelBot:
     min_timeout = 10
@@ -35,6 +35,7 @@ class WebnovelBot:
             self.driver = webdriver.Chrome()
         else:
             self.driver = driver
+
         self.timeout = timeout
 
     def create_api(self) -> ParsedApi:
@@ -105,6 +106,8 @@ class WebnovelBot:
     def signin(self, email, password):
         """
         signin to webnovel using :param email: and :param password:
+
+        :raises ValueError: value error is risen when signin process fails
         """
         # go to login path
         self.driver.get(EMAIL_LOGIN_URL)
@@ -115,14 +118,23 @@ class WebnovelBot:
         signin_btn = self.driver.find_element_by_id('submit')
         signin_btn.click()
 
+        wait = WebDriverWait(self.driver, self.timeout)
+
+        # wait until redirected
+        wait.until(lambda driver: driver.current_url != EMAIL_LOGIN_URL)
+
+        # check if the redirected url is the guard, guard is shown when password is incorrect
+        if self.driver.current_url.startswith(GUARD_URL):
+            raise ValueError('user not found')
+
         # wait till signin success
-        WebDriverWait(self.driver, self.timeout).until(
+        wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='My Profile']"))
         )
 
         # wait for the preferences popup to load and click it away
         try:
-            WebDriverWait(self.driver, self.min_timeout).until(
+            wait.until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".j_post_preference"))
             )
 
@@ -296,14 +308,15 @@ class WebnovelBot:
         :return: Chapter object
         """
         # wait till chapter loads
-        WebDriverWait(self.driver, self.timeout).until(
+        wait = WebDriverWait(self.driver, self.timeout)
+        wait.until(
             EC.presence_of_element_located((By.CLASS_NAME, 'cha-tit'))
         )
 
         # if locked, ensure lock element loads
         # lock element may take some time to load
         if is_locked:
-            WebDriverWait(self.driver, self.timeout).until(
+            wait.until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '.j_locked_chap'))
             )
 
@@ -488,7 +501,8 @@ class WebnovelBot:
         self.driver.execute_script("document.querySelector('.j_show_task_mod').click()")
 
         # wait till tasks are loaded
-        WebDriverWait(self.driver, timeout=self.timeout).until(
+        wait = WebDriverWait(self.driver, timeout=self.timeout)
+        wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '.task-list-item'))
         )
 
@@ -497,11 +511,10 @@ class WebnovelBot:
             claim.click()
 
         # exit
-        exit_button = self.driver.find_element_by_css_selector("#taskMod > div > a[class='_close']")
-        exit_button.click()
+        self.driver.execute_script("document.querySelector('#taskMod ._close').click()")
 
         # wait till popup closes
-        WebDriverWait(self.driver, self.timeout).until_not(
+        wait.until_not(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div#taskMod._on"))
         )
 

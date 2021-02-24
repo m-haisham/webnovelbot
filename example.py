@@ -1,3 +1,5 @@
+import sys
+
 from selenium.webdriver.common.action_chains import ActionChains
 
 from temp import NOVEL, USER_EMAIL, USER_PASS
@@ -68,7 +70,12 @@ if __name__ == '__main__':
     webnovel.driver.get(NOVEL)
     novel_id = webnovel.novel_id
 
-    webnovel.signin(USER_EMAIL, USER_PASS)
+    # signin throws `ValueError` when the specified account cannot be found
+    # / redirected to guard
+    try:
+        webnovel.signin(USER_EMAIL, USER_PASS)
+    except ValueError:
+        sys.exit(0)
 
     # claim_daily(webnovel, NOVEL)
 
