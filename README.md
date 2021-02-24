@@ -32,7 +32,7 @@ there are a few hiccups that one may encounter during signing in to webnovel
 
 - **Guard:** After clicking the signin button the form can redirect the user to a guard website
 
-you can handle then in different ways, `signin` method takes a variable `manual`
+you can handle them in different ways, `signin` method takes a variable `manual`
 which defaults to `False`. Behaviour of the function changes depending on it.
 
 ### `manual=False`
