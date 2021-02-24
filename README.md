@@ -12,6 +12,8 @@ pip install webnovelbot
 
 or
 
+**warning:** this method requires prior installation of `browser-cookie3`
+
 ```bash
 pip install git+https://github.com/mHaisham/webnovelbot.git
 ```
