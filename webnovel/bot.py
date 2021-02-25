@@ -21,15 +21,15 @@ from .tools import UrlTools
 
 BASE_URL = 'https://www.webnovel.com'
 EMAIL_RAW_URL = 'https://passport.webnovel.com/emaillogin.html'
-EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html?appid=900&areaid=1&returnurl=https%3A%2F%2Fwww' \
-                  '.webnovel.com%2FloginSuccess&auto=1&autotime=0&source=&ver=2&fromuid=0&target=iframe&option' \
+EMAIL_LOGIN_URL = 'https://passport.webnovel.com/emaillogin.html?appid=900&areaid=1&auto=1&autotime=0&source=&ver=2' \
+                  '&fromuid=0&target=iframe&option' \
                   '=&logintab=&popup=1&format=redirect '
 GUARD_URL = 'https://passport.webnovel.com/guard.html'
 
 
 class WebnovelBot:
     min_timeout = 10
-    user_timeout = 15 * 60
+    user_timeout = 600
 
     def __init__(self, driver: WebDriver = None, timeout=10):
         """
@@ -143,22 +143,17 @@ class WebnovelBot:
                 raise CaptchaException
 
             # wait until user has solved the captcha
-            wait_user.until(lambda driver: driver.current_url != EMAIL_LOGIN_URL)
-
-        # wait driver leaves email login screen
-        wait.until(lambda driver: not self.driver.current_url.startswith(EMAIL_RAW_URL))
+            wait_user.until(lambda driver: not self.driver.current_url.startswith(EMAIL_RAW_URL))
 
         # check if the redirected url is the guard, guard is shown when password is incorrect
-        signin_timeout = self.timeout
         if self.driver.current_url.startswith(GUARD_URL):
             if not manual:
                 raise GuardException
 
-            # provide chance to login manually
-            signin_timeout = self.user_timeout
+            wait_user.until(lambda driver: not self.driver.current_url.startswith(GUARD_URL))
 
         # wait till signin success ends
-        WebDriverWait(self.driver, signin_timeout).until(
+        WebDriverWait(self.driver, self.timeout).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='My Profile']"))
         )
 

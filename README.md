@@ -52,7 +52,7 @@ except GuardException:
 
 When manual is true the process would be expecting user input during the above mentioned situations.
 
-It would by default wait 15 minutes for user input before throwing a `TimeoutException`.
+It would by default wait 10 minutes for user input before throwing a `TimeoutException`.
 
 You may define a custom time by setting `webnovel.user_timeout`
 
