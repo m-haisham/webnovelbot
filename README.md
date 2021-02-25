@@ -48,6 +48,10 @@ except GuardException:
     pass
 ```
 
+[Read more] on handling Guard
+
+[Read more]: https://github.com/mHaisham/webnovelbot/tree/master/webnovel/handlers
+
 ### `manual=True`
 
 When manual is true the process would be expecting user input during the above mentioned situations.

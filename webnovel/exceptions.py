@@ -22,3 +22,7 @@ class GuardException(Exception):
 
 class CaptchaException(Exception):
     pass
+
+
+class ValidationError(Exception):
+    pass
