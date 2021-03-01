@@ -128,7 +128,13 @@ class BaseApi:
 
     def validate(self, response) -> Dict:
         parsed = json.loads(response.content)
-        if parsed['code'] != 0:
-            raise ApiError(parsed['msg'])
+        try:
+            # code 0 denotes a successful response
+            if parsed['code'] != 0:
+                raise ApiError(parsed['msg'])
+
+        # for instances it doesnt return any data
+        except KeyError:
+            raise ApiError('no data was returned')
 
         return parsed
