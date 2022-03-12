@@ -15,8 +15,6 @@ class BaseApi:
     """
 
     def __init__(self, cookies: Union[RequestsCookieJar, List[dict], None] = None):
-        # as cookies can lead to a rejected response
-        # they are all blocked
         self.session = requests.Session()
         self.has_cookies = bool(cookies)
 
@@ -29,6 +27,8 @@ class BaseApi:
                 m_cookie = requests.cookies.create_cookie(**cookie)
                 self.session.cookies.set_cookie(m_cookie)
         elif cookies is None:
+            # as cookies can lead to a rejected response
+            # they are all blocked
             self.session.cookies.set_policy(BlockAll())
         else:
             raise TypeError("'cookies' was of unrecognized type; must be (RequestsCookieJar, List[dict cookie], None)")
@@ -40,7 +40,7 @@ class BaseApi:
         response = self.session.get(
             'https://www.webnovel.com/go/pcm/chapter/getContent',
             params={
-                # '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
+                '_csrfToken': self.session.cookies.get('_csrfToken') if self.has_cookies else '',
                 'bookId': novel_id,
                 'chapterId': chapter_id
             }
